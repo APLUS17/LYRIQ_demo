@@ -19,17 +19,19 @@ import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-
 import { useLyricStore } from './src/state/lyricStore';
 import RecordingModal from './src/components/RecordingModal';
 import PerformanceView from './src/components/PerformanceView';
+import ProjectsSidebar from './src/components/ProjectsSidebar';
 
 
 
 // Enhanced Section Card Component with Swipe-to-Delete
 const AnimatedView = Animated.createAnimatedComponent(View);
 
-function SectionCard({ section, updateSection, updateSectionType, removeSection }: {
+function SectionCard({ section, updateSection, updateSectionType, removeSection, toggleStarSection }: {
   section: any;
   updateSection: (id: string, content: string) => void;
   updateSectionType: (id: string, type: string) => void;
   removeSection: (id: string) => void;
+  toggleStarSection: (id: string) => void;
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const translateX = useSharedValue(0);
@@ -146,10 +148,25 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection 
           <Ionicons name="chevron-down" size={12} color="#9CA3AF" className="ml-1" />
         </Pressable>
 
-        {/* Drag Handle */}
-        <Pressable className="p-2">
-          <Ionicons name="grid" size={16} color="#9CA3AF" />
-        </Pressable>
+        {/* Controls */}
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          {/* Star Button */}
+          <Pressable 
+            onPress={() => toggleStarSection(section.id)}
+            className="p-2"
+          >
+            <Ionicons 
+              name={section.isStarred ? "star" : "star-outline"} 
+              size={16} 
+              color={section.isStarred ? "#FBBF24" : "#9CA3AF"} 
+            />
+          </Pressable>
+          
+          {/* Drag Handle */}
+          <Pressable className="p-2">
+            <Ionicons name="grid" size={16} color="#9CA3AF" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Dropdown Menu */}
@@ -223,6 +240,7 @@ function AddSectionButton({ onPress }: { onPress: () => void }) {
 function MainScreen() {
   /* 🚨 Hooks: ALWAYS top-level, same order every render */
   const insets = useSafeAreaInsets();
+  const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   
   const { 
     sections, 
@@ -234,7 +252,10 @@ function MainScreen() {
     reorderSections,
     toggleRecordingModal,
     isPerformanceMode,
-    togglePerformanceMode
+    togglePerformanceMode,
+    saveCurrentProject,
+    toggleStarSection,
+    currentProject
   } = useLyricStore();
 
   /* callback to open modal */
@@ -264,15 +285,53 @@ function MainScreen() {
       backgroundColor: '#1A1A1A',
       paddingTop: insets.top + 20 
     }}>
-      {/* Header with View Toggle */}
+      {/* Header with Controls */}
       <View className="flex-row items-center justify-between px-6 mb-6">
-        <Text className="text-4xl font-light text-white">LYRIQ</Text>
-        <Pressable
-          onPress={() => togglePerformanceMode(true)}
-          className="p-2"
-        >
-          <Ionicons name="play" size={24} color="#9CA3AF" />
-        </Pressable>
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          {/* Projects Menu Button */}
+          <Pressable
+            onPress={() => setShowProjectsSidebar(true)}
+            className="p-2"
+          >
+            <Ionicons name="menu" size={24} color="#9CA3AF" />
+          </Pressable>
+          
+          <View>
+            <Text className="text-4xl font-light text-white">LYRIQ</Text>
+            {currentProject && (
+              <Text className="text-gray-400 text-sm">{currentProject.name}</Text>
+            )}
+          </View>
+        </View>
+        
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          {/* Save Button */}
+          <Pressable
+            onPress={() => {
+              saveCurrentProject();
+              // Show save feedback (you could add a toast here)
+            }}
+            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+            style={{
+              shadowColor: '#2563EB',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="save" size={16} color="white" />
+            <Text className="text-white font-medium ml-2 text-sm">save</Text>
+          </Pressable>
+          
+          {/* Performance View Toggle */}
+          <Pressable
+            onPress={() => togglePerformanceMode(true)}
+            className="p-2"
+          >
+            <Ionicons name="play" size={24} color="#9CA3AF" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Sections Container with Swipe-Up Gesture */}
@@ -291,6 +350,7 @@ function MainScreen() {
                 updateSection={updateSection}
                 updateSectionType={updateSectionType}
                 removeSection={removeSection}
+                toggleStarSection={toggleStarSection}
               />
             ))}
 
@@ -328,6 +388,12 @@ function MainScreen() {
 
       {/* Recording Modal */}
       <RecordingModal />
+      
+      {/* Projects Sidebar */}
+      <ProjectsSidebar
+        visible={showProjectsSidebar}
+        onClose={() => setShowProjectsSidebar(false)}
+      />
     </View>
   );
 }

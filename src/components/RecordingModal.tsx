@@ -81,7 +81,15 @@ export default function RecordingModal() {
           <View style={styles.dragHandle} />
           <Recorder 
             onStart={() => console.log("Recording started")}
-            onStop={(duration) => console.log(`Recording stopped after ${duration}s`)}
+            onStop={(duration) => {
+              const { addRecording } = useLyricStore.getState();
+              addRecording({
+                name: `Take ${Date.now()}`,
+                uri: `recording_${Date.now()}.m4a`,
+                duration: duration,
+              });
+              console.log(`Recording saved: ${duration}s`);
+            }}
             visualizerBars={32}
           />
         </Animated.View>

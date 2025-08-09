@@ -8,6 +8,27 @@ export interface LyricSection {
   title: string;
   content: string;
   count: number;
+  isStarred: boolean;
+  projectId?: string;
+}
+
+export interface Recording {
+  id: string;
+  name: string;
+  uri: string;
+  duration: number;
+  createdAt: Date;
+  projectId?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  sections: LyricSection[];
+  recordings: Recording[];
+  isCurrent: boolean;
 }
 
 interface LyricState {
@@ -19,7 +40,16 @@ interface LyricState {
   isPerformanceMode: boolean;
   togglePerformanceMode: (value?: boolean) => void;
   
-  // Sections State
+  // Project Management
+  projects: Project[];
+  currentProject: Project | null;
+  createProject: (name: string) => void;
+  saveCurrentProject: () => void;
+  loadProject: (projectId: string) => void;
+  deleteProject: (projectId: string) => void;
+  renameProject: (projectId: string, name: string) => void;
+  
+  // Current Session (working sections)
   sections: LyricSection[];
   addSection: (type: string) => void;
   updateSection: (id: string, content: string) => void;
@@ -27,11 +57,20 @@ interface LyricState {
   updateSectionCount: (id: string, count: number) => void;
   removeSection: (id: string) => void;
   reorderSections: (draggedId: string, direction: string, currentIndex: number) => void;
+  toggleStarSection: (id: string) => void;
+  
+  // Recordings/Takes Management
+  recordings: Recording[];
+  addRecording: (recording: Omit<Recording, 'id' | 'createdAt'>) => void;
+  removeRecording: (id: string) => void;
+  
+  // Starred Sections (VERSES section)
+  getStarredSections: () => LyricSection[];
 }
 
 export const useLyricStore = create<LyricState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Recording Modal State
       isRecordingModalVisible: false,
       toggleRecordingModal: (value) =>
@@ -46,23 +85,115 @@ export const useLyricStore = create<LyricState>()(
           isPerformanceMode: value ?? !state.isPerformanceMode,
         })),
 
-      // Sections State
+      // Project Management
+      projects: [],
+      currentProject: null,
+      
+      createProject: (name) => set((state) => {
+        const newProject: Project = {
+          id: Date.now().toString(),
+          name: name || `Project ${state.projects.length + 1}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          sections: [...state.sections],
+          recordings: [...state.recordings],
+          isCurrent: true,
+        };
+        
+        const updatedProjects = state.projects.map(p => ({ ...p, isCurrent: false }));
+        
+        return {
+          projects: [...updatedProjects, newProject],
+          currentProject: newProject,
+          sections: [],
+          recordings: [],
+        };
+      }),
+      
+      saveCurrentProject: () => set((state) => {
+        if (!state.currentProject) {
+          // Create a new project if none exists
+          const newProject: Project = {
+            id: Date.now().toString(),
+            name: `Untitled ${state.projects.length + 1}`,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            sections: [...state.sections],
+            recordings: [...state.recordings],
+            isCurrent: true,
+          };
+          
+          return {
+            projects: [...state.projects.map(p => ({ ...p, isCurrent: false })), newProject],
+            currentProject: newProject,
+          };
+        } else {
+          // Update existing project
+          const updatedProject = {
+            ...state.currentProject,
+            sections: [...state.sections],
+            recordings: [...state.recordings],
+            updatedAt: new Date(),
+          };
+          
+          return {
+            projects: state.projects.map(p => 
+              p.id === state.currentProject?.id ? updatedProject : p
+            ),
+            currentProject: updatedProject,
+          };
+        }
+      }),
+      
+      loadProject: (projectId) => set((state) => {
+        const project = state.projects.find(p => p.id === projectId);
+        if (!project) return state;
+        
+        const updatedProjects = state.projects.map(p => ({
+          ...p,
+          isCurrent: p.id === projectId
+        }));
+        
+        return {
+          projects: updatedProjects,
+          currentProject: project,
+          sections: [...project.sections],
+          recordings: [...project.recordings],
+        };
+      }),
+      
+      deleteProject: (projectId) => set((state) => ({
+        projects: state.projects.filter(p => p.id !== projectId),
+        currentProject: state.currentProject?.id === projectId ? null : state.currentProject,
+      })),
+      
+      renameProject: (projectId, name) => set((state) => {
+        const updatedProjects = state.projects.map(p =>
+          p.id === projectId ? { ...p, name, updatedAt: new Date() } : p
+        );
+        
+        return {
+          projects: updatedProjects,
+          currentProject: state.currentProject?.id === projectId 
+            ? { ...state.currentProject, name, updatedAt: new Date() }
+            : state.currentProject,
+        };
+      }),
+
+      // Current Session Sections
       sections: [],
       
       addSection: (type) => set((state) => {
-        try {
-          const newSection: LyricSection = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // More unique ID
-            type: type || 'verse',
-            title: (type || 'verse').charAt(0).toUpperCase() + (type || 'verse').slice(1),
-            content: '',
-            count: 1,
-          };
-          return { sections: [...(state.sections || []), newSection] };
-        } catch (error) {
-          console.warn('Error adding section:', error);
-          return state;
-        }
+        const newSection: LyricSection = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          type: type || 'verse',
+          title: (type || 'verse').charAt(0).toUpperCase() + (type || 'verse').slice(1),
+          content: '',
+          count: 1,
+          isStarred: false,
+          projectId: state.currentProject?.id,
+        };
+        return { sections: [...state.sections, newSection] };
       }),
 
       updateSection: (id, content) => set((state) => ({
@@ -107,11 +238,49 @@ export const useLyricStore = create<LyricState>()(
 
         return { sections: newSections };
       }),
+      
+      toggleStarSection: (id) => set((state) => ({
+        sections: state.sections.map((section) =>
+          section.id === id ? { ...section, isStarred: !section.isStarred } : section
+        ),
+      })),
+
+      // Recordings/Takes Management
+      recordings: [],
+      
+      addRecording: (recording) => set((state) => {
+        const newRecording: Recording = {
+          ...recording,
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          projectId: state.currentProject?.id,
+        };
+        return { recordings: [...state.recordings, newRecording] };
+      }),
+      
+      removeRecording: (id) => set((state) => ({
+        recordings: state.recordings.filter((recording) => recording.id !== id),
+      })),
+      
+      // Starred Sections (VERSES section)
+      getStarredSections: () => {
+        const state = get();
+        const allSections = [
+          ...state.sections,
+          ...state.projects.flatMap(p => p.sections)
+        ];
+        return allSections.filter(section => section.isStarred);
+      },
     }),
     {
-      name: 'lyric-storage',
+      name: 'lyriq-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ sections: state.sections }), // Only persist sections, not modal state
+      partialize: (state) => ({ 
+        projects: state.projects,
+        currentProject: state.currentProject,
+        sections: state.sections,
+        recordings: state.recordings,
+      }),
     }
   )
 );

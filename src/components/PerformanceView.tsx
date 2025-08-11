@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Keyboard } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, Pressable, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Audio } from 'expo-av';
 import { useLyricStore } from '../state/lyricStore';
 import RecordingModal from './RecordingModal';
 
 // Audio Player Component
 function AudioPlayer() {
+  const { recordings } = useLyricStore();
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(65); // 1:05
-  const [totalTime] = useState(154); // 2:34
-  const [progress, setProgress] = useState(0.42); // 42% progress
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [currentRecording, setCurrentRecording] = useState<any>(null);
+  const positionUpdateRef = useRef<NodeJS.Timeout | null>(null);
   
   // Fixed waveform heights to prevent re-render performance issues
   const waveHeights = React.useMemo(() => 
@@ -18,28 +23,156 @@ function AudioPlayer() {
     []
   );
 
+  // Initialize with the most recent recording if available
+  useEffect(() => {
+    if (recordings.length > 0 && !currentRecording) {
+      setCurrentRecording(recordings[0]);
+    }
+  }, [recordings]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+      if (positionUpdateRef.current) {
+        clearInterval(positionUpdateRef.current);
+      }
+    };
+  }, [sound]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+  const handlePlayPause = async () => {
+    if (!currentRecording) {
+      Alert.alert('No Recording', 'Please select a recording from your Takes first.');
+      return;
+    }
+
+    try {
+      if (sound) {
+        if (isPlaying) {
+          await sound.pauseAsync();
+          setIsPlaying(false);
+          if (positionUpdateRef.current) {
+            clearInterval(positionUpdateRef.current);
+          }
+        } else {
+          await sound.playAsync();
+          setIsPlaying(true);
+          startPositionUpdates();
+        }
+      } else {
+        // Load and play the recording
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: currentRecording.uri }
+        );
+        
+        setSound(newSound);
+        
+        // Get duration
+        const status = await newSound.getStatusAsync();
+        if (status.isLoaded) {
+          setTotalTime(Math.floor((status.durationMillis || 0) / 1000));
+        }
+        
+        // Set up playback status updates
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+              setCurrentTime(0);
+              setProgress(0);
+              if (positionUpdateRef.current) {
+                clearInterval(positionUpdateRef.current);
+              }
+            }
+          }
+        });
+        
+        await newSound.playAsync();
+        setIsPlaying(true);
+        startPositionUpdates();
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      Alert.alert('Playback Error', 'Failed to play recording');
+    }
   };
 
-  const handleSeek = (newProgress: number) => {
-    const newTime = Math.floor(newProgress * totalTime);
-    setCurrentTime(newTime);
-    setProgress(newProgress);
+  const startPositionUpdates = () => {
+    positionUpdateRef.current = setInterval(async () => {
+      if (sound) {
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded && status.isPlaying) {
+          const currentTimeMs = status.positionMillis || 0;
+          const currentTimeSec = Math.floor(currentTimeMs / 1000);
+          const totalTimeSec = Math.floor((status.durationMillis || 1) / 1000);
+          
+          setCurrentTime(currentTimeSec);
+          setProgress(totalTimeSec > 0 ? currentTimeSec / totalTimeSec : 0);
+        }
+      }
+    }, 1000);
   };
+
+  const handleSeek = async (newProgress: number) => {
+    if (!sound || !currentRecording) return;
+    
+    try {
+      const status = await sound.getStatusAsync();
+      if (status.isLoaded) {
+        const newPositionMs = newProgress * (status.durationMillis || 0);
+        await sound.setPositionAsync(newPositionMs);
+        const newTime = Math.floor(newPositionMs / 1000);
+        setCurrentTime(newTime);
+        setProgress(newProgress);
+      }
+    } catch (error) {
+      console.error('Error seeking:', error);
+    }
+  };
+
+  const handleSkipBack = async () => {
+    const newTime = Math.max(0, currentTime - 15);
+    const newProgress = totalTime > 0 ? newTime / totalTime : 0;
+    await handleSeek(newProgress);
+  };
+
+  const handleSkipForward = async () => {
+    const newTime = Math.min(totalTime, currentTime + 15);
+    const newProgress = totalTime > 0 ? newTime / totalTime : 0;
+    await handleSeek(newProgress);
+  };
+
+  if (recordings.length === 0) {
+    return (
+      <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
+        <View className="items-center py-8">
+          <Ionicons name="musical-notes-outline" size={48} color="#4B5563" />
+          <Text className="text-gray-400 text-center mt-4">
+            No recordings available{'\n'}Record a take to enable playback
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
       {/* Track Info */}
       <View className="items-center mb-4">
-        <Text className="text-white text-xl font-medium mb-1">Beat</Text>
-        <Text className="text-gray-400 text-sm">+Beats • ntes</Text>
+        <Text className="text-white text-xl font-medium mb-1" numberOfLines={1}>
+          {currentRecording?.name || 'No Recording'}
+        </Text>
+        <Text className="text-gray-400 text-sm">
+          Take • {recordings.length} available
+        </Text>
       </View>
 
       {/* Waveform/Progress Bar */}
@@ -76,12 +209,31 @@ function AudioPlayer() {
       {/* Control Buttons */}
       <View className="flex-row items-center justify-center"
         style={{ gap: 32 }}>
-        <Pressable className="p-2">
-          <Ionicons name="share-outline" size={24} color="#9CA3AF" />
+        <Pressable 
+          onPress={() => {
+            const currentIndex = recordings.findIndex(r => r.id === currentRecording?.id);
+            if (currentIndex > 0) {
+              const prevRecording = recordings[currentIndex - 1];
+              setCurrentRecording(prevRecording);
+              if (sound) {
+                sound.unloadAsync();
+                setSound(null);
+                setIsPlaying(false);
+                setCurrentTime(0);
+                setProgress(0);
+              }
+            }
+          }}
+          className="p-2"
+        >
+          <Ionicons name="play-skip-back" size={28} color="white" />
         </Pressable>
         
-        <Pressable className="p-2">
-          <Ionicons name="play-skip-back" size={28} color="white" />
+        <Pressable 
+          onPress={handleSkipBack}
+          className="p-2"
+        >
+          <Ionicons name="play-back" size={24} color="#9CA3AF" />
         </Pressable>
         
         <Pressable
@@ -96,12 +248,31 @@ function AudioPlayer() {
           />
         </Pressable>
         
-        <Pressable className="p-2">
-          <Ionicons name="play-skip-forward" size={28} color="white" />
+        <Pressable 
+          onPress={handleSkipForward}
+          className="p-2"
+        >
+          <Ionicons name="play-forward" size={24} color="#9CA3AF" />
         </Pressable>
         
-        <Pressable className="p-2">
-          <Ionicons name="shuffle" size={24} color="#9CA3AF" />
+        <Pressable 
+          onPress={() => {
+            const currentIndex = recordings.findIndex(r => r.id === currentRecording?.id);
+            if (currentIndex < recordings.length - 1) {
+              const nextRecording = recordings[currentIndex + 1];
+              setCurrentRecording(nextRecording);
+              if (sound) {
+                sound.unloadAsync();
+                setSound(null);
+                setIsPlaying(false);
+                setCurrentTime(0);
+                setProgress(0);
+              }
+            }
+          }}
+          className="p-2"
+        >
+          <Ionicons name="play-skip-forward" size={28} color="white" />
         </Pressable>
       </View>
     </View>

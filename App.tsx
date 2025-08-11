@@ -18,6 +18,7 @@ import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-
 // Import the new modular components
 import { useLyricStore } from './src/state/lyricStore';
 import RecordingModal from './src/components/RecordingModal';
+import Toast from './src/components/Toast';
 import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
 

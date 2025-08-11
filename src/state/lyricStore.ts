@@ -40,6 +40,13 @@ interface LyricState {
   isPerformanceMode: boolean;
   togglePerformanceMode: (value?: boolean) => void;
   
+  // Toast State
+  toastVisible: boolean;
+  toastMessage: string;
+  toastType: 'success' | 'error' | 'info';
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  hideToast: () => void;
+  
   // Project Management
   projects: Project[];
   currentProject: Project | null;
@@ -85,6 +92,22 @@ export const useLyricStore = create<LyricState>()(
           isPerformanceMode: value ?? !state.isPerformanceMode,
         })),
 
+      // Toast State
+      toastVisible: false,
+      toastMessage: '',
+      toastType: 'success',
+      showToast: (message, type = 'success') =>
+        set({
+          toastVisible: true,
+          toastMessage: message,
+          toastType: type,
+        }),
+      hideToast: () =>
+        set({
+          toastVisible: false,
+          toastMessage: '',
+        }),
+
       // Project Management
       projects: [],
       currentProject: null,
@@ -110,31 +133,41 @@ export const useLyricStore = create<LyricState>()(
         };
       }),
       
-      saveCurrentProject: () => set((state) => {
-        if (!state.currentProject) {
-          // Create a new project if none exists
-          const newProject: Project = {
-            id: Date.now().toString(),
-            name: `Untitled ${state.projects.length + 1}`,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            sections: [...state.sections],
-            recordings: [...state.recordings],
-            isCurrent: true,
-          };
-          
-          return {
-            projects: [...state.projects.map(p => ({ ...p, isCurrent: false })), newProject],
-            currentProject: newProject,
-          };
-        } else {
-          // Update existing project
-          const updatedProject = {
-            ...state.currentProject,
-            sections: [...state.sections],
-            recordings: [...state.recordings],
-            updatedAt: new Date(),
-          };
+      saveCurrentProject: () => {
+        const state = useLyricStore.getState();
+        const { showToast } = state;
+        
+        set((state) => {
+          if (!state.currentProject) {
+            // Create a new project if none exists
+            const newProject: Project = {
+              id: Date.now().toString(),
+              name: `Untitled ${state.projects.length + 1}`,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              sections: [...state.sections],
+              recordings: [...state.recordings],
+              isCurrent: true,
+            };
+            
+            // Show success toast
+            setTimeout(() => showToast(`Created "${newProject.name}"`, 'success'), 100);
+            
+            return {
+              projects: [...state.projects.map(p => ({ ...p, isCurrent: false })), newProject],
+              currentProject: newProject,
+            };
+          } else {
+            // Update existing project
+            const updatedProject = {
+              ...state.currentProject,
+              sections: [...state.sections],
+              recordings: [...state.recordings],
+              updatedAt: new Date(),
+            };
+            
+            // Show success toast
+            setTimeout(() => showToast(`Saved "${updatedProject.name}"`, 'success'), 100);
           
           return {
             projects: state.projects.map(p => 
@@ -143,7 +176,7 @@ export const useLyricStore = create<LyricState>()(
             currentProject: updatedProject,
           };
         }
-      }),
+      });
       
       loadProject: (projectId) => set((state) => {
         const project = state.projects.find(p => p.id === projectId);

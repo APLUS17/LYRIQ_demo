@@ -242,6 +242,7 @@ function MainScreen() {
   /* 🚨 Hooks: ALWAYS top-level, same order every render */
   const insets = useSafeAreaInsets();
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   
   const { 
     sections, 
@@ -304,7 +305,8 @@ function MainScreen() {
           <Pressable
             onPress={() => {
               saveCurrentProject();
-              // Show save feedback (you could add a toast here)
+              setShowSaveToast(true);
+              setTimeout(() => setShowSaveToast(false), 2000);
             }}
             className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
             style={{
@@ -383,6 +385,22 @@ function MainScreen() {
 
       {/* Recording Modal */}
       <RecordingModal />
+      
+      {/* Save Toast */}
+      {showSaveToast && (
+        <View 
+          className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-green-600 px-4 py-2 rounded-lg z-50"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 8,
+          }}
+        >
+          <Text className="text-white font-medium">Project saved!</Text>
+        </View>
+      )}
       
       {/* Projects Sidebar */}
       <ProjectsSidebar

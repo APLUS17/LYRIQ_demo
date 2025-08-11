@@ -49,8 +49,16 @@ function AudioPlayer() {
   };
 
   const handlePlayPause = async () => {
-    if (!currentRecording) {
-      Alert.alert('No Recording', 'Please select a recording from your Takes first.');
+    // If no recordings exist, show helpful message
+    if (recordings.length === 0) {
+      Alert.alert('No Recordings', 'Record some audio first by tapping the record button below.');
+      return;
+    }
+
+    // If no current recording selected, use the first one
+    if (!currentRecording && recordings.length > 0) {
+      setCurrentRecording(recordings[0]);
+      setTotalTime(recordings[0].duration || 0);
       return;
     }
 
@@ -68,22 +76,39 @@ function AudioPlayer() {
           startPositionUpdates();
         }
       } else {
+        // Validate recording URI
+        if (!currentRecording.uri) {
+          Alert.alert('Invalid Recording', 'This recording file is corrupted. Please record a new one.');
+          return;
+        }
+
+        // Set audio mode for playback
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+        });
+
         // Load and play the recording
         const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: currentRecording.uri }
+          { uri: currentRecording.uri },
+          { shouldPlay: true }
         );
         
         setSound(newSound);
+        setIsPlaying(true);
         
-        // Get duration
-        const status = await newSound.getStatusAsync();
-        if (status.isLoaded) {
-          setTotalTime(Math.floor((status.durationMillis || 0) / 1000));
+        // Use recording metadata for duration if available
+        if (currentRecording.duration) {
+          setTotalTime(currentRecording.duration);
         }
         
         // Set up playback status updates
         newSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded) {
+            if (status.durationMillis && !currentRecording.duration) {
+              setTotalTime(Math.floor(status.durationMillis / 1000));
+            }
+            
             if (status.didJustFinish) {
               setIsPlaying(false);
               setCurrentTime(0);
@@ -95,13 +120,18 @@ function AudioPlayer() {
           }
         });
         
-        await newSound.playAsync();
-        setIsPlaying(true);
         startPositionUpdates();
       }
     } catch (error) {
       console.error('Error playing audio:', error);
-      Alert.alert('Playback Error', 'Failed to play recording');
+      Alert.alert('Playback Error', 'Unable to play this recording. Please try recording new audio.');
+      
+      // Reset state on error
+      setIsPlaying(false);
+      if (sound) {
+        sound.unloadAsync();
+        setSound(null);
+      }
     }
   };
 
@@ -167,12 +197,39 @@ function AudioPlayer() {
     <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
       {/* Track Info */}
       <View className="items-center mb-4">
-        <Text className="text-white text-xl font-medium mb-1" numberOfLines={1}>
-          {currentRecording?.name || 'No Recording'}
-        </Text>
-        <Text className="text-gray-400 text-sm">
-          Take • {recordings.length} available
-        </Text>
+        <Pressable 
+          onPress={() => {
+            if (recordings.length > 1) {
+              // Cycle to next recording
+              const currentIndex = recordings.findIndex(r => r.id === currentRecording?.id);
+              const nextIndex = (currentIndex + 1) % recordings.length;
+              setCurrentRecording(recordings[nextIndex]);
+              setTotalTime(recordings[nextIndex].duration || 0);
+              
+              // Stop current playback
+              if (sound) {
+                sound.unloadAsync();
+                setSound(null);
+              }
+              setIsPlaying(false);
+              setCurrentTime(0);
+              setProgress(0);
+            }
+          }}
+          className="items-center"
+        >
+          <Text className="text-white text-xl font-medium mb-1" numberOfLines={1}>
+            {currentRecording?.name || 'No Recording'}
+          </Text>
+          <View className="flex-row items-center">
+            <Text className="text-gray-400 text-sm">
+              Take • {recordings.length} available
+            </Text>
+            {recordings.length > 1 && (
+              <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+            )}
+          </View>
+        </Pressable>
       </View>
 
       {/* Waveform/Progress Bar */}

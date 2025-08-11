@@ -169,14 +169,15 @@ export const useLyricStore = create<LyricState>()(
             // Show success toast
             setTimeout(() => showToast(`Saved "${updatedProject.name}"`, 'success'), 100);
           
-          return {
-            projects: state.projects.map(p => 
-              p.id === state.currentProject?.id ? updatedProject : p
-            ),
-            currentProject: updatedProject,
-          };
-        }
-      });
+            return {
+              projects: state.projects.map(p => 
+                p.id === state.currentProject?.id ? updatedProject : p
+              ),
+              currentProject: updatedProject,
+            };
+          }
+        });
+      },
       
       loadProject: (projectId) => set((state) => {
         const project = state.projects.find(p => p.id === projectId);

@@ -80,15 +80,20 @@ export default function RecordingModal() {
         <Animated.View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }, sheetStyle]}>
           <View style={styles.dragHandle} />
           <Recorder 
-            onStart={() => console.log("Recording started")}
-            onStop={(duration) => {
+            onStart={() => {
+              // Recording started
+            }}
+            onStop={(duration, uri) => {
               const { addRecording } = useLyricStore.getState();
               addRecording({
-                name: `Take ${Date.now()}`,
-                uri: `recording_${Date.now()}.m4a`,
+                name: `Take ${new Date().toLocaleTimeString()}`,
+                uri: uri,
                 duration: duration,
               });
-              console.log(`Recording saved: ${duration}s`);
+              // Auto-close modal after recording
+              setTimeout(() => {
+                toggleRecordingModal(false);
+              }, 500);
             }}
             visualizerBars={32}
           />

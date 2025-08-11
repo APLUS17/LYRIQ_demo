@@ -1,304 +1,404 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, Modal, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  useAnimatedGestureHandler,
+  runOnJS,
+} from 'react-native-reanimated';
+import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Simple state management
-const useLyricStore = () => {
-  const [sections, setSections] = useState([]);
-  const [showSidebar, setShowSidebar] = useState(false);
+// Import the new modular components
+import { useLyricStore } from './src/state/lyricStore';
+import RecordingModal from './src/components/RecordingModal';
+import PerformanceView from './src/components/PerformanceView';
+import ProjectsSidebar from './src/components/ProjectsSidebar';
 
-  const addSection = (type) => {
-    const newSection = {
-      id: Date.now().toString(),
-      type,
-      title: type.charAt(0).toUpperCase() + type.slice(1),
-      content: '',
-      isStarred: false,
-    };
-    setSections(prev => [...prev, newSection]);
-  };
 
-  const updateSection = (id, content) => {
-    setSections(prev => prev.map(section =>
-      section.id === id ? { ...section, content } : section
-    ));
-  };
 
-  const toggleStarSection = (id) => {
-    setSections(prev => prev.map(section =>
-      section.id === id ? { ...section, isStarred: !section.isStarred } : section
-    ));
-  };
+// Enhanced Section Card Component with Swipe-to-Delete
+const AnimatedView = Animated.createAnimatedComponent(View);
 
-  const removeSection = (id) => {
-    setSections(prev => prev.filter(section => section.id !== id));
-  };
+function SectionCard({ section, updateSection, updateSectionType, removeSection, toggleStarSection }: {
+  section: any;
+  updateSection: (id: string, content: string) => void;
+  updateSectionType: (id: string, type: string) => void;
+  removeSection: (id: string) => void;
+  toggleStarSection: (id: string) => void;
+}) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const isDragging = useSharedValue(false);
+  
+  const sectionTypes = [
+    'verse', 'chorus', 'bridge', 'pre-chorus', 'outro', 'tag', 'intro'
+  ];
 
-  const saveProject = () => {
-    console.log('Project saved!', { sections: sections.length });
-  };
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: (_, context: any) => {
+      context.startX = translateX.value;
+      context.startY = translateY.value;
+    },
+    onActive: (event, context: any) => {
+      const isHorizontal = Math.abs(event.translationX) > Math.abs(event.translationY);
+      
+      if (isHorizontal && context.startX !== undefined) {
+        // Horizontal swipe - only allow left swipe for delete
+        translateX.value = Math.min(0, context.startX + event.translationX);
+      } else if (context.startY !== undefined) {
+        // Vertical drag for reordering - constrain to Y-axis only
+        translateY.value = context.startY + event.translationY;
+        translateX.value = withSpring(0); // Always snap back to center horizontally
+        isDragging.value = true;
+      }
+    },
+    onEnd: (event) => {
+      const isHorizontal = Math.abs(event.translationX) > Math.abs(event.translationY);
+      
+      if (isHorizontal && translateX.value < -100) {
+        // Swipe left to delete
+        translateX.value = withTiming(-400, { duration: 300 });
+        opacity.value = withTiming(0, { duration: 300 }, (finished) => {
+          if (finished) {
+            runOnJS(removeSection)(section.id);
+          }
+        });
+      } else {
+        // Snap back to original position
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        isDragging.value = false;
+      }
+    },
+  });
 
-  return { 
-    sections, 
-    addSection, 
-    updateSection, 
-    toggleStarSection, 
-    removeSection, 
-    saveProject,
-    showSidebar,
-    setShowSidebar
-  };
-};
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ] as any,
+    opacity: opacity.value,
+    zIndex: isDragging.value ? 999 : 1,
+  }));
 
-// Simple Section Card
-function SectionCard({ section, updateSection, toggleStarSection, removeSection }) {
+  const backgroundStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value < -50 ? 1 : 0,
+  }));
+
   return (
-    <View style={{
-      backgroundColor: '#2A2A2A',
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 8,
-      elevation: 4,
-    }}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ color: '#E5E7EB', fontSize: 16, fontWeight: '600' }}>
-          {section.title}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Pressable onPress={() => toggleStarSection(section.id)}>
+    <View className="mb-4">
+      {/* Delete Background */}
+      <AnimatedView 
+        style={[
+          {
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 100,
+            backgroundColor: '#EF4444',
+            borderRadius: 12,
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 0,
+          },
+          backgroundStyle
+        ]}
+      >
+        <Ionicons name="trash" size={24} color="white" />
+      </AnimatedView>
+
+      {/* Card */}
+      <PanGestureHandler onGestureEvent={gestureHandler}>
+        <AnimatedView 
+          style={[
+            {
+              backgroundColor: '#2A2A2A',
+              borderRadius: 12,
+              padding: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowRadius: 8,
+              elevation: 4,
+              zIndex: 1,
+            },
+            animatedStyle
+          ]}
+        >
+      {/* Section Header */}
+      <View className="flex-row items-center justify-between mb-3">
+        {/* Section Type Dropdown */}
+        <Pressable
+          onPress={() => setShowDropdown(!showDropdown)}
+          className="flex-row items-center bg-gray-700 px-3 py-2 rounded-lg"
+        >
+          <Ionicons name="menu" size={12} color="#9CA3AF" />
+          <Text className="ml-2 text-sm font-medium text-gray-200">
+            {section.title}
+          </Text>
+          <Ionicons name="chevron-down" size={12} color="#9CA3AF" className="ml-1" />
+        </Pressable>
+
+        {/* Controls */}
+        <View className="flex-row items-center" style={{ gap: 8 }}>
+          {/* Star Button */}
+          <Pressable 
+            onPress={() => toggleStarSection(section.id)}
+            className="p-2"
+          >
             <Ionicons 
               name={section.isStarred ? "star" : "star-outline"} 
               size={16} 
               color={section.isStarred ? "#FBBF24" : "#9CA3AF"} 
             />
           </Pressable>
-          <Pressable onPress={() => removeSection(section.id)}>
-            <Ionicons name="trash" size={16} color="#EF4444" />
+          
+          {/* Drag Handle */}
+          <Pressable className="p-2">
+            <Ionicons name="grid" size={16} color="#9CA3AF" />
           </Pressable>
         </View>
       </View>
-      
-      {/* Content */}
-      <Text 
-        style={{ 
-          color: '#9CA3AF', 
-          fontSize: 14, 
-          fontStyle: 'italic',
-          minHeight: 60 
-        }}
-      >
-        {section.content || `Write your ${section.type} here...`}
-      </Text>
-    </View>
-  );
-}
 
-// Projects/Takes/VERSES Sidebar
-function ProjectsSidebar({ visible, onClose }) {
-  const insets = useSafeAreaInsets();
-  const { sections } = useLyricStore();
-  
-  if (!visible) return null;
-
-  const starredSections = sections.filter(s => s.isStarred);
-
-  return (
-    <View style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.3)',
-    }}>
-      <Pressable style={{ flex: 1 }} onPress={onClose} />
-      
-      <View style={{
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: '85%',
-        backgroundColor: '#1C1C1E',
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-      }}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#374151' }}>
-          <Text style={{ color: 'white', fontSize: 18, fontWeight: '600' }}>LYRIQ</Text>
-        </View>
-
-        <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
-          {/* Projects Section */}
-          <View style={{ paddingVertical: 16 }}>
-            <Text style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12 }}>PROJECTS</Text>
-            <Pressable style={{
-              backgroundColor: '#374151',
-              padding: 12,
-              borderRadius: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}>
-              <Ionicons name="add" size={20} color="#3B82F6" />
-              <Text style={{ color: '#3B82F6', marginLeft: 8, fontWeight: '500' }}>New Project</Text>
+      {/* Dropdown Menu */}
+      {showDropdown && (
+        <View 
+          className="absolute top-12 left-4 bg-gray-800 rounded-lg z-10"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+            minWidth: 120,
+          }}
+        >
+          {sectionTypes.map((type, index) => (
+            <Pressable
+              key={type}
+              onPress={() => {
+                updateSectionType(section.id, type);
+                setShowDropdown(false);
+              }}
+              className="px-3 py-2.5"
+              style={{
+                borderBottomWidth: index < sectionTypes.length - 1 ? 1 : 0,
+                borderBottomColor: '#4B5563',
+              }}
+            >
+              <Text className="text-sm text-gray-200 capitalize font-medium">
+                {type}
+              </Text>
             </Pressable>
-          </View>
+          ))}
+        </View>
+      )}
 
-          {/* Takes Section */}
-          <View style={{ paddingVertical: 16 }}>
-            <Text style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12 }}>TAKES (0)</Text>
-            <Text style={{ color: '#6B7280', fontSize: 12 }}>No recordings yet</Text>
-          </View>
-
-          {/* VERSES Section */}
-          <View style={{ paddingVertical: 16 }}>
-            <Text style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12 }}>
-              VERSES ({starredSections.length})
-            </Text>
-            {starredSections.map((section) => (
-              <View key={section.id} style={{
-                backgroundColor: '#374151',
-                padding: 12,
-                borderRadius: 8,
-                marginBottom: 8,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#FBBF24', fontWeight: '500', marginBottom: 4 }}>
-                    {section.title}
-                  </Text>
-                  <Text style={{ color: '#9CA3AF', fontSize: 12 }} numberOfLines={2}>
-                    {section.content || 'Empty section'}
-                  </Text>
-                </View>
-                <Ionicons name="star" size={16} color="#FBBF24" />
-              </View>
-            ))}
-            {starredSections.length === 0 && (
-              <Text style={{ color: '#6B7280', fontSize: 12 }}>No starred sections yet</Text>
-            )}
-          </View>
-        </ScrollView>
-      </View>
+      {/* Lyrics Text Area */}
+      <TextInput
+        multiline
+        placeholder={`Write your ${section.type} here...`}
+        value={section.content}
+        onChangeText={(text) => updateSection(section.id, text)}
+        className="min-h-[100px] text-base leading-6"
+        style={{ 
+          fontFamily: 'Georgia', 
+          textAlignVertical: 'top',
+          color: '#F3F4F6'
+        }}
+        placeholderTextColor="#6B7280"
+      />
+        </AnimatedView>
+      </PanGestureHandler>
     </View>
   );
 }
 
-// Main Screen
+// Add Section Button Component
+function AddSectionButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center bg-gray-700 px-4 py-3 rounded-lg mb-6"
+    >
+      <Text className="text-gray-200 font-medium">add section</Text>
+      <Text className="text-gray-200 ml-2 text-lg">+</Text>
+    </Pressable>
+  );
+}
+
+// Main App
 function MainScreen() {
+  /* 🚨 Hooks: ALWAYS top-level, same order every render */
   const insets = useSafeAreaInsets();
+  const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
+  
   const { 
     sections, 
     addSection, 
     updateSection, 
-    toggleStarSection, 
-    removeSection,
-    saveProject,
-    showSidebar,
-    setShowSidebar
+    updateSectionType, 
+    updateSectionCount, 
+    removeSection, 
+    reorderSections,
+    toggleRecordingModal,
+    isPerformanceMode,
+    togglePerformanceMode,
+    saveCurrentProject,
+    toggleStarSection
   } = useLyricStore();
 
+  /* callback to open modal */
+  const openRecorder = useCallback(() => toggleRecordingModal(true), [toggleRecordingModal]);
+
+  /* ✅ ALWAYS call this hook - logic inside handler, not around hook */
+  const swipeUpGestureHandler = useAnimatedGestureHandler({
+    onEnd: (event) => {
+      // Detect upward swipe from bottom area with safe bounds
+      const screenHeight = 800; // approximate screen height
+      const isFromBottom = event.absoluteY > screenHeight * 0.6; // bottom 40% of screen
+      const isUpwardSwipe = event.translationY < -50 && event.velocityY < -500;
+      
+      if (isUpwardSwipe && isFromBottom) {
+        runOnJS(toggleRecordingModal)(true);
+      }
+    },
+  });
+
+  // Conditional rendering based on view mode
+  if (isPerformanceMode) {
+    return <PerformanceView />;
+  }
+
   return (
-    <View style={{ 
-      flex: 1, 
+    <View className="flex-1" style={{ 
       backgroundColor: '#1A1A1A',
       paddingTop: insets.top + 20 
     }}>
-      {/* Header */}
-      <View style={{ 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        marginBottom: 24 
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable onPress={() => setShowSidebar(true)} style={{ padding: 8 }}>
+      {/* Header with Controls */}
+      <View className="flex-row items-center justify-between px-6 mb-6">
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          {/* Projects Menu Button */}
+          <Pressable
+            onPress={() => setShowProjectsSidebar(true)}
+            className="p-2"
+          >
             <Ionicons name="menu" size={24} color="#9CA3AF" />
           </Pressable>
-          <Text style={{ color: 'white', fontSize: 32, fontWeight: '300' }}>LYRIQ</Text>
+          
+          <Text className="text-4xl font-light text-white">LYRIQ</Text>
         </View>
         
-        <Pressable
-          onPress={saveProject}
-          style={{
-            backgroundColor: '#2563EB',
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <Ionicons name="save" size={16} color="white" />
-          <Text style={{ color: 'white', marginLeft: 8, fontWeight: '500' }}>save</Text>
-        </Pressable>
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          {/* Save Button */}
+          <Pressable
+            onPress={() => {
+              saveCurrentProject();
+              // Show save feedback (you could add a toast here)
+            }}
+            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+            style={{
+              shadowColor: '#2563EB',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="save" size={16} color="white" />
+            <Text className="text-white font-medium ml-2 text-sm">save</Text>
+          </Pressable>
+          
+          {/* Performance View Toggle */}
+          <Pressable
+            onPress={() => togglePerformanceMode(true)}
+            className="p-2"
+          >
+            <Ionicons name="play" size={24} color="#9CA3AF" />
+          </Pressable>
+        </View>
       </View>
 
-      {/* Content */}
-      <ScrollView 
-        style={{ flex: 1, paddingHorizontal: 24 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {sections.map((section) => (
-          <SectionCard
-            key={section.id}
-            section={section}
-            updateSection={updateSection}
-            toggleStarSection={toggleStarSection}
-            removeSection={removeSection}
-          />
-        ))}
+      {/* Sections Container with Swipe-Up Gesture */}
+      <PanGestureHandler onGestureEvent={swipeUpGestureHandler}>
+        <Animated.View className="flex-1">
+          <ScrollView 
+            className="flex-1 px-6" 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 60 }}
+          >
+            {/* Section Cards */}
+            {sections.map((section) => (
+              <SectionCard 
+                key={section.id} 
+                section={section}
+                updateSection={updateSection}
+                updateSectionType={updateSectionType}
+                removeSection={removeSection}
+                toggleStarSection={toggleStarSection}
+              />
+            ))}
 
-        {/* Add Section Button */}
-        <Pressable
-          onPress={() => addSection('verse')}
-          style={{
-            backgroundColor: '#374151',
-            padding: 16,
-            borderRadius: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 24,
-          }}
-        >
-          <Text style={{ color: '#E5E7EB', fontWeight: '500' }}>add section</Text>
-          <Text style={{ color: '#E5E7EB', marginLeft: 8, fontSize: 18 }}>+</Text>
-        </Pressable>
+            {/* Add Section Button */}
+            <AddSectionButton onPress={() => addSection('verse')} />
 
-        {sections.length === 0 && (
-          <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-            <Text style={{ color: '#6B7280', textAlign: 'center' }}>
-              Tap "add section" to start writing
-            </Text>
+            {sections.length === 0 && (
+              <View className="items-center py-12">
+                <Text className="text-gray-500 text-center">
+                  Tap "add section" to start writing
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Recording Launch Button */}
+          <View className="absolute bottom-4 left-0 right-0 items-center">
+            <Pressable 
+              onPress={openRecorder}
+              className="bg-red-500 w-16 h-16 rounded-full items-center justify-center"
+              style={{
+                shadowColor: '#EF4444',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            >
+              <Ionicons name="mic" size={24} color="white" />
+            </Pressable>
+            <Text className="text-gray-400 text-xs mt-2">Swipe up to record</Text>
           </View>
-        )}
-      </ScrollView>
+        </Animated.View>
+      </PanGestureHandler>
 
+      {/* Recording Modal */}
+      <RecordingModal />
+      
       {/* Projects Sidebar */}
-      <ProjectsSidebar visible={showSidebar} onClose={() => setShowSidebar(false)} />
+      <ProjectsSidebar
+        visible={showProjectsSidebar}
+        onClose={() => setShowProjectsSidebar(false)}
+      />
     </View>
   );
 }
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <NavigationContainer>
           <MainScreen />
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>

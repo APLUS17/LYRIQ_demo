@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,11 +24,15 @@ export default function Recorder({
   onStop, 
   visualizerBars = 48 
 }: RecorderProps) {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [time, setTime] = useState(0);
   const [barHeights, setBarHeights] = useState(Array(visualizerBars).fill(4));
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  
+  // Keep a single Recording instance
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  // Block re-entry while preparing
+  const isPreparingRef = useRef(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
@@ -37,13 +41,15 @@ export default function Recorder({
   const buttonScale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
 
+  // Clean up on unmount
   useEffect(() => {
     setupAudio();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (animationRef.current) clearInterval(animationRef.current);
-      if (recording) {
-        recording.stopAndUnloadAsync();
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+        recordingRef.current = null;
       }
     };
   }, []);
@@ -65,27 +71,41 @@ export default function Recorder({
     }
   };
 
-  const startRecording = async () => {
-    if (permissionGranted === false) {
-      Alert.alert(
-        'Microphone Permission Required',
-        'Please enable microphone access in your device settings to record audio.',
-        [{ text: 'OK' }]
-      );
-      return;
+  const startRecording = useCallback(async () => {
+    // Guard: if we're already preparing or recording, ignore
+    if (isPreparingRef.current || isRecording) return;
+
+    // If a previous instance leaked, unload it first
+    if (recordingRef.current) {
+      try { 
+        await recordingRef.current.stopAndUnloadAsync(); 
+      } catch {} 
+      recordingRef.current = null;
     }
 
-    if (permissionGranted === null) {
-      Alert.alert('Loading', 'Setting up microphone...');
-      return;
-    }
-
+    isPreparingRef.current = true;
     try {
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      
-      setRecording(newRecording);
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Microphone access is needed to record.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+      });
+
+      const rec = new Audio.Recording();
+      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await rec.startAsync();
+
+      recordingRef.current = rec;
       setIsRecording(true);
       setTime(0);
       onStart?.();
@@ -116,18 +136,21 @@ export default function Recorder({
       console.error('Failed to start recording:', error);
       Alert.alert('Recording Error', 'Failed to start recording. Please try again.');
       setIsRecording(false);
+    } finally {
+      isPreparingRef.current = false;
     }
-  };
+  }, [isRecording, onStart]);
 
-  const stopRecording = async () => {
-    if (!recording) return;
-    
+  const stopRecording = useCallback(async () => {
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      const status = await recording.getStatusAsync();
+      const rec = recordingRef.current;
+      if (!rec) return;
       
-      setRecording(null);
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+      const status = await rec.getStatusAsync();
+      
+      recordingRef.current = null; // Critical: release instance
       setIsRecording(false);
       
       // Clear timers
@@ -158,7 +181,7 @@ export default function Recorder({
       Alert.alert('Recording Error', 'Failed to stop recording');
       setIsRecording(false);
     }
-  };
+  }, [visualizerBars, buttonScale, onStop]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -211,6 +234,7 @@ export default function Recorder({
         {/* Main Button */}
         <AnimatedPressable
           onPress={handlePress}
+          disabled={isPreparingRef.current}
           style={[
             {
               width: 80,
@@ -224,6 +248,7 @@ export default function Recorder({
               elevation: 8,
               justifyContent: 'center',
               alignItems: 'center',
+              opacity: isPreparingRef.current ? 0.6 : 1,
             },
             buttonStyle,
           ]}

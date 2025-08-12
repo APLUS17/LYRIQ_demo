@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAudioRecorder, RecordingPresets, usePermissions } from 'expo-audio';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,142 +19,236 @@ interface RecorderProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function Recorder({ 
-  onStart, 
-  onStop, 
-  visualizerBars = 48 
+// Global guard to prevent multiple prepared Recording instances
+let globalRecordingRef: Audio.Recording | null = null;
+
+type Action = 'idle' | 'preparing' | 'recording' | 'stopping';
+
+export default function Recorder({
+  onStart,
+  onStop,
+  visualizerBars = 48,
 }: RecorderProps) {
+  const [isRecording, setIsRecording] = useState(false);
   const [time, setTime] = useState(0);
   const [barHeights, setBarHeights] = useState(Array(visualizerBars).fill(4));
-  
-  // Use modern expo-audio hooks
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const [permission, requestPermission] = usePermissions();
-  
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const actionRef = useRef<Action>('idle');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
-  const isPreparingRef = useRef(false);
-  
+  const lastTapRef = useRef<number>(0);
+
   // Animation values
   const buttonScale = useSharedValue(1);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationRef.current) clearInterval(animationRef.current);
-      // Modern hook handles cleanup automatically
+  // Safer, explicit options (works better than presets on some devices)
+  const RECORDING_OPTIONS: Audio.RecordingOptions = {
+    android: {
+      extension: '.m4a',
+      outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+      audioEncoder: Audio.AndroidAudioEncoder.AAC,
+      sampleRate: 44100,
+      numberOfChannels: 1,
+      bitRate: 128000,
+    },
+    ios: {
+      extension: '.m4a',
+      audioQuality: Audio.IOSAudioQuality.HIGH,
+      sampleRate: 44100,
+      numberOfChannels: 1,
+      bitRate: 128000,
+      outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+    },
+    web: undefined as any, // not used in native build
+    isMeteringEnabled: false,
+  };
+
+  // Clean up everything, including any prepared/recording instance
+  const resetRecorder = useCallback(async () => {
+    // timers/animations first
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (animationRef.current) {
+      clearInterval(animationRef.current);
+      animationRef.current = null;
+    }
+    cancelAnimation(buttonScale);
+    buttonScale.value = withTiming(1);
+    setBarHeights(Array(visualizerBars).fill(4));
+
+    const stop = async (rec: Audio.Recording | null) => {
+      if (!rec) return;
+      try {
+        const st = await rec.getStatusAsync();
+        if (st.canRecord || st.isRecording || !st.isDoneRecording) {
+          await rec.stopAndUnloadAsync();
+        }
+      } catch {
+        // best-effort cleanup
+      }
     };
-  }, []);
+
+    await stop(recordingRef.current);
+    await stop(globalRecordingRef);
+
+    recordingRef.current = null;
+    globalRecordingRef = null;
+
+    // optionally release record mode so other audio can play later
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+      });
+    } catch {}
+  }, [buttonScale, visualizerBars]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        setPermissionGranted(status === 'granted');
+        if (status === 'granted') {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+            shouldDuckAndroid: true,
+            interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+            playThroughEarpieceAndroid: false,
+            staysActiveInBackground: false,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to setup audio:', e);
+        setPermissionGranted(false);
+      }
+    })();
+
+    return () => {
+      resetRecorder();
+    };
+  }, [resetRecorder]);
 
   const startRecording = useCallback(async () => {
-    // Guard: if we're already preparing or recording, ignore
-    if (isPreparingRef.current || audioRecorder.isRecording) return;
+    if (actionRef.current !== 'idle') return;
+    actionRef.current = 'preparing';
 
-    isPreparingRef.current = true;
     try {
-      // Check and request permissions using modern hook
-      if (!permission?.granted) {
-        const { granted } = await requestPermission();
-        if (!granted) {
+      const perm = await Audio.getPermissionsAsync();
+      if (perm.status !== 'granted') {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
           Alert.alert('Permission required', 'Microphone access is needed to record.');
+          actionRef.current = 'idle';
           return;
         }
       }
 
-      console.log('Starting recording with modern expo-audio...');
-      
-      // Use modern recording hook - this handles all the audio session setup
-      await audioRecorder.prepareToRecordAsync();
-      audioRecorder.record();
-      
+      // Make sure nothing is lingering
+      await resetRecorder();
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+      });
+
+      const rec = new Audio.Recording();
+      // Avoid presets, use explicit options
+      await rec.prepareToRecordAsync(RECORDING_OPTIONS);
+      await rec.startAsync();
+
+      recordingRef.current = rec;
+      globalRecordingRef = rec;
+
+      setIsRecording(true);
       setTime(0);
       onStart?.();
-      
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setTime((prev) => prev + 1);
-      }, 1000);
-      
-      // Start visualizer animation
+
+      // timers / animation
+      timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
       animationRef.current = setInterval(() => {
-        setBarHeights(prevHeights => 
-          prevHeights.map(() => 4 + Math.random() * 20)
-        );
+        setBarHeights((h) => h.map(() => 4 + Math.random() * 20));
       }, 100);
-      
-      // Start button animations
       buttonScale.value = withRepeat(
-        withSequence(
-          withTiming(1.1, { duration: 500 }),
-          withTiming(1, { duration: 500 })
-        ),
+        withSequence(withTiming(1.1, { duration: 500 }), withTiming(1, { duration: 500 })),
         -1,
         false
       );
-      
-    } catch (error) {
-      console.error('Failed to start recording:', error);
+
+      actionRef.current = 'recording';
+    } catch (e) {
+      console.error('Failed to start recording:', e);
       Alert.alert('Recording Error', 'Failed to start recording. Please try again.');
-    } finally {
-      isPreparingRef.current = false;
+      await resetRecorder();
+      setIsRecording(false);
+      actionRef.current = 'idle';
     }
-  }, [audioRecorder, permission, requestPermission, onStart]);
+  }, [onStart, resetRecorder, buttonScale]);
 
   const stopRecording = useCallback(async () => {
+    if (actionRef.current !== 'recording' || !recordingRef.current) return;
+    actionRef.current = 'stopping';
+
     try {
-      if (!audioRecorder.isRecording) return;
-      
-      console.log('Stopping recording with modern expo-audio...');
-      
-      // Use modern hook to stop and get URI
-      const uri = await audioRecorder.stop();
-      
-      // Clear timers
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      if (animationRef.current) {
-        clearInterval(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      // Reset visualizer
-      setBarHeights(Array(visualizerBars).fill(4));
-      
-      // Stop animations
-      cancelAnimation(buttonScale);
-      buttonScale.value = withTiming(1);
-      
-      // Validate the recording URI
-      console.log('Recording completed with URI:', uri);
-      
+      const rec = recordingRef.current;
+      // make sure it actually started before stopping
+      try {
+        const st = await rec.getStatusAsync();
+        if (!st.isRecording && !st.canRecord) {
+          // not actually recording; bail safely
+          await resetRecorder();
+          setIsRecording(false);
+          actionRef.current = 'idle';
+          return;
+        }
+      } catch {}
+
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+
+      setIsRecording(false);
+      await resetRecorder();
+
       if (uri && typeof uri === 'string' && uri.trim() !== '') {
-        const duration = time; // We track time in our component
-        console.log('Recording completed successfully:', { uri, duration });
+        const duration = time > 0 ? time : 0;
         onStop?.(duration, uri);
       } else {
-        console.warn('Recording validation failed:', { uri });
         Alert.alert('Recording Issue', 'Recording completed but could not save the file. Please try again.');
       }
-      
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-      Alert.alert('Recording Error', 'Failed to stop recording');
+    } catch (e) {
+      console.error('Failed to stop recording:', e);
+      Alert.alert('Recording Error', 'Failed to stop recording.');
+      setIsRecording(false);
+      await resetRecorder();
+    } finally {
+      actionRef.current = 'idle';
     }
-  }, [audioRecorder, time, visualizerBars, buttonScale, onStop]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
+  }, [time, onStop, resetRecorder]);
 
   const handlePress = () => {
-    if (audioRecorder.isRecording) {
+    // Debounce hard taps
+    const now = Date.now();
+    if (now - lastTapRef.current < 250) return;
+    lastTapRef.current = now;
+
+    if (actionRef.current === 'recording') {
       stopRecording();
-    } else {
+    } else if (actionRef.current === 'idle') {
       startRecording();
     }
   };
@@ -163,8 +257,7 @@ export default function Recorder({
     transform: [{ scale: buttonScale.value }],
   }));
 
-  // Handle permission states
-  if (permission === null) {
+  if (permissionGranted === null) {
     return (
       <View className="items-center py-4">
         <Text className="text-gray-400">Setting up microphone...</Text>
@@ -172,24 +265,24 @@ export default function Recorder({
     );
   }
 
-  if (!permission.granted) {
+  if (permissionGranted === false) {
     return (
       <View className="items-center py-4">
         <View className="items-center gap-4">
           <Ionicons name="mic-off" size={48} color="#9CA3AF" />
           <Text className="text-gray-400 text-center">
-            Microphone access required{'\n'}Please enable permissions to record
+            Microphone access required{'\n'}Please enable in device settings
           </Text>
-          <Pressable
-            onPress={requestPermission}
-            className="bg-blue-600 px-4 py-2 rounded-lg"
-          >
-            <Text className="text-white font-medium">Grant Permission</Text>
+          <Pressable onPress={startRecording} className="bg-blue-600 px-4 py-2 rounded-lg">
+            <Text className="text-white font-medium">Grant & Start</Text>
           </Pressable>
         </View>
       </View>
     );
   }
+
+  const disabled =
+    actionRef.current === 'preparing' || actionRef.current === 'stopping';
 
   return (
     <View className="items-center py-4">
@@ -197,13 +290,13 @@ export default function Recorder({
         {/* Main Button */}
         <AnimatedPressable
           onPress={handlePress}
-          disabled={isPreparingRef.current}
+          disabled={disabled}
           style={[
             {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: audioRecorder.isRecording ? '#EF4444' : '#EF4444',
+              backgroundColor: '#EF4444',
               shadowColor: '#EF4444',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -211,12 +304,12 @@ export default function Recorder({
               elevation: 8,
               justifyContent: 'center',
               alignItems: 'center',
-              opacity: isPreparingRef.current ? 0.6 : 1,
+              opacity: disabled ? 0.6 : 1,
             },
             buttonStyle,
           ]}
         >
-          {audioRecorder.isRecording ? (
+          {isRecording ? (
             <Ionicons name="stop" size={28} color="white" />
           ) : (
             <Ionicons name="mic" size={28} color="white" />
@@ -224,9 +317,10 @@ export default function Recorder({
         </AnimatedPressable>
 
         {/* Timer */}
-        <Text className="font-mono text-lg font-medium" style={{ 
-          color: audioRecorder.isRecording ? '#F3F4F6' : '#9CA3AF' 
-        }}>
+        <Text
+          className="font-mono text-lg font-medium"
+          style={{ color: isRecording ? '#F3F4F6' : '#9CA3AF' }}
+        >
           {formatTime(time)}
         </Text>
 
@@ -237,8 +331,8 @@ export default function Recorder({
               key={i}
               className="w-1 rounded-full mx-0.5"
               style={{
-                height: audioRecorder.isRecording ? height : 4,
-                backgroundColor: audioRecorder.isRecording ? '#EF4444' : '#4B5563',
+                height: isRecording ? height : 4,
+                backgroundColor: isRecording ? '#EF4444' : '#4B5563',
               }}
             />
           ))}
@@ -246,9 +340,15 @@ export default function Recorder({
 
         {/* Status Text */}
         <Text className="text-sm font-medium" style={{ color: '#9CA3AF' }}>
-          {audioRecorder.isRecording ? 'Recording... Tap to stop' : 'Tap to start recording'}
+          {isRecording ? 'Recording... Tap to stop' : 'Tap to start recording'}
         </Text>
       </View>
     </View>
   );
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }

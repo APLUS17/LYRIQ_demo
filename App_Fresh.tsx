@@ -7,56 +7,74 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// Simple state management
-const useLyricStore = () => {
-  const [sections, setSections] = useState([]);
-  const [showSidebar, setShowSidebar] = useState(false);
+// Types and simple state management for this demo screen
+type Section = {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  isStarred: boolean;
+};
 
-  const addSection = (type) => {
-    const newSection = {
+const useLyricStore = () => {
+  const [sections, setSections] = useState<Section[]>([]);
+  const [showSidebar, setShowSidebar] = useState<boolean>(false);
+
+  const addSection = (type: string) => {
+    const safeType = type || 'verse';
+    const newSection: Section = {
       id: Date.now().toString(),
-      type,
-      title: type.charAt(0).toUpperCase() + type.slice(1),
+      type: safeType,
+      title: safeType.charAt(0).toUpperCase() + safeType.slice(1),
       content: '',
       isStarred: false,
     };
-    setSections(prev => [...prev, newSection]);
+    setSections((prev) => [...prev, newSection]);
   };
 
-  const updateSection = (id, content) => {
-    setSections(prev => prev.map(section =>
-      section.id === id ? { ...section, content } : section
-    ));
+  const updateSection = (id: string, content: string) => {
+    setSections((prev) =>
+      prev.map((section) => (section.id === id ? { ...section, content } : section))
+    );
   };
 
-  const toggleStarSection = (id) => {
-    setSections(prev => prev.map(section =>
-      section.id === id ? { ...section, isStarred: !section.isStarred } : section
-    ));
+  const toggleStarSection = (id: string) => {
+    setSections((prev) =>
+      prev.map((section) =>
+        section.id === id ? { ...section, isStarred: !section.isStarred } : section
+      )
+    );
   };
 
-  const removeSection = (id) => {
-    setSections(prev => prev.filter(section => section.id !== id));
+  const removeSection = (id: string) => {
+    setSections((prev) => prev.filter((section) => section.id !== id));
   };
 
   const saveProject = () => {
     console.log('Project saved!', { sections: sections.length });
   };
 
-  return { 
-    sections, 
-    addSection, 
-    updateSection, 
-    toggleStarSection, 
-    removeSection, 
+  return {
+    sections,
+    addSection,
+    updateSection,
+    toggleStarSection,
+    removeSection,
     saveProject,
     showSidebar,
-    setShowSidebar
+    setShowSidebar,
   };
 };
 
 // Simple Section Card
-function SectionCard({ section, updateSection, toggleStarSection, removeSection }) {
+type SectionCardProps = {
+  section: Section;
+  updateSection: (id: string, content: string) => void;
+  toggleStarSection: (id: string) => void;
+  removeSection: (id: string) => void;
+};
+
+function SectionCard({ section, updateSection, toggleStarSection, removeSection }: SectionCardProps) {
   return (
     <View style={{
       backgroundColor: '#2A2A2A',
@@ -103,13 +121,18 @@ function SectionCard({ section, updateSection, toggleStarSection, removeSection 
 }
 
 // Projects/Takes/VERSES Sidebar
-function ProjectsSidebar({ visible, onClose }) {
+type ProjectsSidebarProps = {
+  visible: boolean;
+  onClose: () => void;
+};
+
+function ProjectsSidebar({ visible, onClose }: ProjectsSidebarProps) {
   const insets = useSafeAreaInsets();
   const { sections } = useLyricStore();
   
   if (!visible) return null;
 
-  const starredSections = sections.filter(s => s.isStarred);
+  const starredSections = sections.filter((s) => s.isStarred);
 
   return (
     <View style={{

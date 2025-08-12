@@ -10,6 +10,7 @@ export interface LyricSection {
   count: number;
   isStarred: boolean;
   projectId?: string;
+  collapsed?: boolean;
 }
 
 export interface Recording {
@@ -65,6 +66,7 @@ interface LyricState {
   removeSection: (id: string) => void;
   reorderSections: (draggedId: string, direction: string, currentIndex: number) => void;
   toggleStarSection: (id: string) => void;
+  toggleCollapse: (id: string) => void;
   
   // Recordings/Takes Management
   recordings: Recording[];
@@ -226,6 +228,7 @@ export const useLyricStore = create<LyricState>()(
           count: 1,
           isStarred: false,
           projectId: state.currentProject?.id,
+          collapsed: false,
         };
         return { sections: [...state.sections, newSection] };
       }),
@@ -276,6 +279,12 @@ export const useLyricStore = create<LyricState>()(
       toggleStarSection: (id) => set((state) => ({
         sections: state.sections.map((section) =>
           section.id === id ? { ...section, isStarred: !section.isStarred } : section
+        ),
+      })),
+
+      toggleCollapse: (id) => set((state) => ({
+        sections: state.sections.map((section) =>
+          section.id === id ? { ...section, collapsed: !section.collapsed } : section
         ),
       })),
 

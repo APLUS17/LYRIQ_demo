@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAudioPlayer } from 'expo-audio';
+import { Audio } from 'expo-av';
 import { useLyricStore } from '../state/lyricStore';
 import RecordingModal from './RecordingModal';
 
@@ -14,8 +14,8 @@ function AudioPlayer() {
   const [totalTime, setTotalTime] = useState(0);
   const [progress, setProgress] = useState(0);
   
-  // Use modern expo-audio hook - this handles all audio management
-  const player = useAudioPlayer(currentRecording?.uri || null);
+  // expo-av Sound instance
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const positionUpdateRef = useRef<NodeJS.Timeout | null>(null);
   
   // Fixed waveform heights to prevent re-render performance issues
@@ -39,35 +39,68 @@ function AudioPlayer() {
     }
   }, [recordings]);
 
-  // Handle playback status updates with modern hook
+  // Load/unload sound when current recording changes
   useEffect(() => {
-    if (player.playing) {
-      // Start position updates when playing
-      positionUpdateRef.current = setInterval(() => {
-        const currentPos = player.currentTime || 0;
-        const duration = player.duration || 1;
-        
-        setCurrentTime(Math.floor(currentPos));
-        setProgress(duration > 0 ? currentPos / duration : 0);
-        
-        if (duration > 0 && !totalTime) {
-          setTotalTime(Math.floor(duration));
+    let isCancelled = false;
+
+    const setup = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+        });
+
+        if (!currentRecording?.uri || typeof currentRecording.uri !== 'string' || currentRecording.uri.trim() === '') {
+          return;
         }
-      }, 1000);
-    } else {
-      // Clear interval when not playing
+
+        // Unload previous sound
+        if (sound) {
+          try { await sound.unloadAsync(); } catch {}
+          setSound(null);
+        }
+
+        const { sound: newSound, status } = await Audio.Sound.createAsync(
+          { uri: currentRecording.uri },
+          { shouldPlay: false, progressUpdateIntervalMillis: 500 }
+        );
+
+        if (isCancelled) {
+          try { await newSound.unloadAsync(); } catch {}
+          return;
+        }
+
+        newSound.setOnPlaybackStatusUpdate((s) => {
+          const st = s as any;
+          if (!st || !st.isLoaded) return;
+          const pos = st.positionMillis ?? 0;
+          const dur = st.durationMillis ?? 0;
+          setCurrentTime(Math.floor(pos / 1000));
+          setTotalTime(Math.floor(dur / 1000));
+          setProgress(dur > 0 ? pos / dur : 0);
+        });
+
+        setSound(newSound);
+
+        // Initialize times from initial status if available
+        const dur = (status as any)?.durationMillis ?? 0;
+        setTotalTime(Math.floor(dur / 1000));
+        setCurrentTime(0);
+        setProgress(0);
+      } catch (e) {
+        console.warn('Failed to setup playback', e);
+      }
+    };
+
+    setup();
+    return () => {
+      isCancelled = true;
       if (positionUpdateRef.current) {
         clearInterval(positionUpdateRef.current);
         positionUpdateRef.current = null;
       }
-    }
-
-    return () => {
-      if (positionUpdateRef.current) {
-        clearInterval(positionUpdateRef.current);
-      }
     };
-  }, [player.playing, player.currentTime, player.duration, totalTime]);
+  }, [currentRecording?.uri]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -75,7 +108,7 @@ function AudioPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     // If no recordings exist, show helpful message
     if (recordings.length === 0) {
       Alert.alert('No Recordings', 'Record some audio first by tapping the record button below.');
@@ -102,11 +135,14 @@ function AudioPlayer() {
         return;
       }
 
-      // Use modern player controls
-      if (player.playing) {
-        player.pause();
-      } else {
-        player.play();
+      if (!sound) return;
+      const status = await sound.getStatusAsync();
+      if ('isLoaded' in status && status.isLoaded) {
+        if (status.isPlaying) {
+          await sound.pauseAsync();
+        } else {
+          await sound.playAsync();
+        }
       }
     } catch (error) {
       console.error('Error playing audio:', error);
@@ -114,14 +150,16 @@ function AudioPlayer() {
     }
   };
 
-  const handleSeek = (newProgress: number) => {
-    if (!currentRecording || !player.duration) return;
-    
+  const handleSeek = async (newProgress: number) => {
+    if (!currentRecording || !sound) return;
     try {
-      const newTime = newProgress * player.duration;
-      player.seekTo(newTime);
-      setCurrentTime(Math.floor(newTime));
-      setProgress(newProgress);
+      const status = await sound.getStatusAsync();
+      if ('isLoaded' in status && status.isLoaded && status.durationMillis) {
+        const newTimeMs = Math.max(0, Math.min(1, newProgress)) * status.durationMillis;
+        await sound.setPositionAsync(newTimeMs);
+        setCurrentTime(Math.floor(newTimeMs / 1000));
+        setProgress(Math.max(0, Math.min(1, newProgress)));
+      }
     } catch (error) {
       console.error('Error seeking:', error);
     }
@@ -196,11 +234,10 @@ function AudioPlayer() {
               setTotalTime(validRecordings[nextIndex].duration || 0);
               
               // Stop current playback
-              if (sound) {
-                sound.unloadAsync();
-                setSound(null);
-              }
-              setIsPlaying(false);
+              // Using expo-audio hook; remove stale sound refs
+              // No direct unload here; selection will switch track
+              setCurrentTime(0);
+              setProgress(0);
               setCurrentTime(0);
               setProgress(0);
             }
@@ -266,13 +303,8 @@ function AudioPlayer() {
             if (currentIndex > 0) {
               const prevRecording = recordings[currentIndex - 1];
               setCurrentRecording(prevRecording);
-              if (sound) {
-                sound.unloadAsync();
-                setSound(null);
-                setIsPlaying(false);
-                setCurrentTime(0);
-                setProgress(0);
-              }
+              setCurrentTime(0);
+              setProgress(0);
             }
           }}
           className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
@@ -298,12 +330,7 @@ function AudioPlayer() {
             elevation: 8,
           }}
         >
-          <Ionicons
-            name={player.playing ? "pause" : "play"}
-            size={32}
-            color="black"
-            style={{ marginLeft: player.playing ? 0 : 3 }}
-          />
+          <Ionicons name="play" size={32} color="black" style={{ marginLeft: 3 }} />
         </Pressable>
         
         <Pressable 
@@ -319,13 +346,8 @@ function AudioPlayer() {
             if (currentIndex < recordings.length - 1) {
               const nextRecording = recordings[currentIndex + 1];
               setCurrentRecording(nextRecording);
-              if (sound) {
-                sound.unloadAsync();
-                setSound(null);
-                setIsPlaying(false);
-                setCurrentTime(0);
-                setProgress(0);
-              }
+              setCurrentTime(0);
+              setProgress(0);
             }
           }}
           className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"

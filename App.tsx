@@ -21,6 +21,7 @@ import RecordingModal from './src/components/RecordingModal';
 import Toast from './src/components/Toast';
 import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
+import IdeasScreen from './src/screens/IdeasScreen';
 
 
 
@@ -242,6 +243,7 @@ function MainScreen() {
   /* 🚨 Hooks: ALWAYS top-level, same order every render */
   const insets = useSafeAreaInsets();
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
+  const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   
   const { 
@@ -406,7 +408,15 @@ function MainScreen() {
       <ProjectsSidebar
         visible={showProjectsSidebar}
         onClose={() => setShowProjectsSidebar(false)}
+        onNavigateToIdeas={() => setShowIdeasScreen(true)}
       />
+
+      {/* Ideas Screen */}
+      {showIdeasScreen && (
+        <View className="absolute inset-0 z-50">
+          <IdeasScreen onBack={() => setShowIdeasScreen(false)} />
+        </View>
+      )}
     </View>
   );
 }

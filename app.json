@@ -19,8 +19,6 @@
         "android.permission.RECORD_AUDIO"
       ]
     },
-    "plugins": [
-      "expo-audio"
-    ]
+    "plugins": []
   }
 }

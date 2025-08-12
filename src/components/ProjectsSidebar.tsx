@@ -13,9 +13,10 @@ import { useLyricStore } from '../state/lyricStore';
 interface ProjectsSidebarProps {
   visible: boolean;
   onClose: () => void;
+  onNavigateToIdeas?: () => void;
 }
 
-export default function ProjectsSidebar({ visible, onClose }: ProjectsSidebarProps) {
+export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }: ProjectsSidebarProps) {
   const insets = useSafeAreaInsets();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -109,35 +110,47 @@ export default function ProjectsSidebar({ visible, onClose }: ProjectsSidebarPro
           <Animated.View
             style={[
               {
-                width: '85%',
-                backgroundColor: '#1C1C1E',
+                width: 260,
+                backgroundColor: '#171717',
                 paddingTop: insets.top,
                 paddingBottom: insets.bottom,
               },
               sidebarStyle,
             ]}
           >
-            {/* Header */}
-            <View className="px-4 py-4 border-b border-gray-700">
-              <Text className="text-white text-lg font-semibold">Projects</Text>
+            {/* Header with LYRIQ branding */}
+            <View className="px-4 py-6 border-b border-gray-800">
+              <Text className="text-white text-xl font-bold tracking-wide">LYRIQ</Text>
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-              {/* New Project Button */}
-              <View className="px-4 py-3">
+              {/* New Song Button */}
+              <View className="px-3 py-4">
                 <Pressable
                   onPress={() => setShowNewProjectModal(true)}
-                  className="flex-row items-center p-3 rounded-lg bg-gray-800"
+                  className="flex-row items-center justify-center p-3 rounded-lg border border-gray-600 bg-transparent active:bg-gray-800"
                 >
-                  <Ionicons name="add" size={20} color="#007AFF" />
-                  <Text className="text-blue-500 font-medium ml-3">New Project</Text>
+                  <Ionicons name="add" size={16} color="white" />
+                  <Text className="text-white font-medium ml-2">New song</Text>
                 </Pressable>
               </View>
 
-              {/* Projects List */}
-              <View className="px-4">
-                <Text className="text-gray-400 text-sm mb-3 px-3">Recent Projects</Text>
-                
+              {/* Explore LYRIQs */}
+              <View className="px-3 pb-4">
+                <Pressable 
+                  onPress={() => {
+                    onNavigateToIdeas?.();
+                    onClose();
+                  }}
+                  className="flex-row items-center p-3 rounded-lg hover:bg-gray-800 active:bg-gray-800"
+                >
+                  <Ionicons name="compass-outline" size={16} color="#9CA3AF" />
+                  <Text className="text-gray-200 text-sm ml-3">Explore LYRIQs</Text>
+                </Pressable>
+              </View>
+
+              {/* Recent Songs List */}
+              <View className="px-3">
                 {projects.map((project) => (
                   <Pressable
                     key={project.id}
@@ -145,99 +158,36 @@ export default function ProjectsSidebar({ visible, onClose }: ProjectsSidebarPro
                       loadProject(project.id);
                       onClose();
                     }}
-                    className={`p-3 rounded-lg mb-2 ${
-                      project.isCurrent ? 'bg-blue-900 border border-blue-700' : 'bg-gray-800'
-                    }`}
+                    className="flex-row items-center p-3 rounded-lg mb-1 hover:bg-gray-800 active:bg-gray-800"
                   >
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-1">
-                        <Text className="text-white font-medium mb-1" numberOfLines={1}>
-                          {project.name}
-                        </Text>
-                        <Text className="text-gray-400 text-sm mb-1">
-                          {project.sections.length} sections • {project.recordings.length} takes
-                        </Text>
-                        <Text className="text-gray-500 text-xs">
-                          {formatDate(project.updatedAt)}
-                        </Text>
-                      </View>
-                      
-                      {project.isCurrent && (
-                        <Ionicons name="checkmark-circle" size={20} color="#007AFF" />
-                      )}
+                    <Ionicons name="musical-notes-outline" size={16} color="#9CA3AF" />
+                    <View className="flex-1 ml-3">
+                      <Text className="text-gray-200 text-sm" numberOfLines={1}>
+                        {project.name}
+                      </Text>
                     </View>
                   </Pressable>
                 ))}
 
                 {projects.length === 0 && (
-                  <View className="items-center py-8">
-                    <Ionicons name="folder-outline" size={48} color="#4B5563" />
-                    <Text className="text-gray-400 text-center mt-4">
-                      No projects yet.{'\n'}Create your first project above.
+                  <View className="px-3 py-8">
+                    <Text className="text-gray-400 text-center text-sm">
+                      No songs yet. Create your first song above!
                     </Text>
                   </View>
                 )}
               </View>
 
-              {/* Takes Section */}
-              <View className="px-4 mt-6">
-                <Text className="text-gray-400 text-sm mb-3 px-3">Takes ({recordings.length})</Text>
-                
-                {recordings.slice(0, 3).map((recording) => (
-                  <View
-                    key={recording.id}
-                    className="p-3 rounded-lg mb-2 bg-gray-800"
-                  >
-                    <Text className="text-white font-medium mb-1" numberOfLines={1}>
-                      {recording.name}
-                    </Text>
-                    <Text className="text-gray-400 text-sm">
-                      {Math.floor(recording.duration / 60)}:{(recording.duration % 60).toString().padStart(2, '0')}
-                    </Text>
-                  </View>
-                ))}
-
-                {recordings.length > 3 && (
-                  <Pressable className="p-3 rounded-lg">
-                    <Text className="text-blue-500 text-sm">View all {recordings.length} takes...</Text>
-                  </Pressable>
-                )}
-              </View>
-
-              {/* VERSES Section (Starred) */}
-              {starredSections.length > 0 && (
-                <View className="px-4 mt-6">
-                  <Text className="text-gray-400 text-sm mb-3 px-3">VERSES ({starredSections.length})</Text>
-                  
-                  {starredSections.slice(0, 5).map((section) => (
-                    <View
-                      key={section.id}
-                      className="p-3 rounded-lg mb-2 bg-gray-800"
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1">
-                          <Text className="text-yellow-500 font-medium mb-1" numberOfLines={1}>
-                            {section.title}
-                          </Text>
-                          <Text className="text-gray-400 text-sm" numberOfLines={2}>
-                            {section.content || 'Empty section'}
-                          </Text>
-                        </View>
-                        <Ionicons name="star" size={16} color="#FBBF24" />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
             </ScrollView>
 
             {/* User Profile */}
-            <View className="px-4 py-4 border-t border-gray-700">
-              <Pressable className="flex-row items-center p-3 rounded-lg">
-                <View className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center">
-                  <Text className="text-white font-bold text-sm">L</Text>
+            <View className="px-3 pb-2 border-t border-gray-800 mt-4">
+              <Pressable className="flex-row items-center p-3 rounded-lg hover:bg-gray-800 active:bg-gray-800 mt-2">
+                <View className="w-7 h-7 bg-orange-500 rounded-full items-center justify-center">
+                  <Text className="text-white font-bold text-xs">A</Text>
                 </View>
-                <Text className="text-white font-medium ml-3">LYRIQ User</Text>
+                <Text className="text-gray-200 text-sm ml-3 flex-1" numberOfLines={1}>ayo omoloja</Text>
+                <Ionicons name="ellipsis-horizontal" size={16} color="#9CA3AF" />
               </Pressable>
             </View>
           </Animated.View>

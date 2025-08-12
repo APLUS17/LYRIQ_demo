@@ -71,6 +71,8 @@ export function AIAssistantModal() {
   };
 
   const handlePresetPress = async (preset: typeof aiPresets[0]) => {
+    if (isLoading) return; // Prevent duplicate calls
+    
     setSelectedPreset(preset.id);
     setLoading(true);
 
@@ -90,7 +92,7 @@ export function AIAssistantModal() {
   };
 
   const handleCustomPrompt = async () => {
-    if (!customPrompt.trim()) return;
+    if (!customPrompt.trim() || isLoading) return; // Prevent duplicate calls
 
     setLoading(true);
     try {

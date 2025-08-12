@@ -159,9 +159,10 @@ export function MumbleRecorder() {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      const status = await recording.getStatusAsync();
+      const status: any = await recording.getStatusAsync();
+      const isLoaded: boolean = Boolean((status as any)?.isLoaded);
       
-      if (uri && status.isLoaded) {
+      if (uri && isLoaded) {
         setTempRecordingUri(uri);
         setTempDuration(Math.floor((status.durationMillis || 0) / 1000));
         setShowNamingModal(true);

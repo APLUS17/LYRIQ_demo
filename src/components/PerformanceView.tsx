@@ -26,7 +26,15 @@ function AudioPlayer() {
   // Initialize with the most recent recording if available
   useEffect(() => {
     if (recordings.length > 0 && !currentRecording) {
-      setCurrentRecording(recordings[0]);
+      // Find the first recording with a valid URI
+      const validRecording = recordings.find(rec => 
+        rec.uri && typeof rec.uri === 'string' && rec.uri.trim() !== ''
+      );
+      
+      if (validRecording) {
+        setCurrentRecording(validRecording);
+        setTotalTime(validRecording.duration || 0);
+      }
     }
   }, [recordings]);
 
@@ -82,16 +90,28 @@ function AudioPlayer() {
           return;
         }
 
+        // Additional URI validation
+        if (typeof currentRecording.uri !== 'string' || currentRecording.uri.trim() === '') {
+          Alert.alert('Invalid Recording', 'This recording file path is invalid. Please record a new one.');
+          return;
+        }
+
         // Set audio mode for playback
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: false,
           playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
         });
 
-        // Load and play the recording
+        // Load and play the recording with better error handling
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: currentRecording.uri },
-          { shouldPlay: true }
+          { 
+            shouldPlay: true,
+            isLooping: false,
+            volume: 1.0,
+          }
         );
         
         setSound(newSound);
@@ -180,14 +200,27 @@ function AudioPlayer() {
     await handleSeek(newProgress);
   };
 
-  if (recordings.length === 0) {
+  // Filter valid recordings
+  const validRecordings = recordings.filter(rec => 
+    rec.uri && typeof rec.uri === 'string' && rec.uri.trim() !== ''
+  );
+
+  if (validRecordings.length === 0) {
     return (
       <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
         <View className="items-center py-8">
           <Ionicons name="musical-notes-outline" size={48} color="#4B5563" />
           <Text className="text-gray-400 text-center mt-4">
-            No recordings available{'\n'}Record a take to enable playback
+            {recordings.length === 0 
+              ? "No recordings available\nRecord a take to enable playback"
+              : "No valid recordings found\nPlease record new audio"
+            }
           </Text>
+          {recordings.length > 0 && (
+            <Text className="text-gray-500 text-xs mt-2">
+              ({recordings.length} corrupted recording{recordings.length > 1 ? 's' : ''} found)
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -199,12 +232,17 @@ function AudioPlayer() {
       <View className="items-center mb-4">
         <Pressable 
           onPress={() => {
-            if (recordings.length > 1) {
-              // Cycle to next recording
-              const currentIndex = recordings.findIndex(r => r.id === currentRecording?.id);
-              const nextIndex = (currentIndex + 1) % recordings.length;
-              setCurrentRecording(recordings[nextIndex]);
-              setTotalTime(recordings[nextIndex].duration || 0);
+            // Filter valid recordings only
+            const validRecordings = recordings.filter(rec => 
+              rec.uri && typeof rec.uri === 'string' && rec.uri.trim() !== ''
+            );
+            
+            if (validRecordings.length > 1) {
+              // Cycle to next valid recording
+              const currentIndex = validRecordings.findIndex(r => r.id === currentRecording?.id);
+              const nextIndex = (currentIndex + 1) % validRecordings.length;
+              setCurrentRecording(validRecordings[nextIndex]);
+              setTotalTime(validRecordings[nextIndex].duration || 0);
               
               // Stop current playback
               if (sound) {
@@ -223,9 +261,9 @@ function AudioPlayer() {
           </Text>
           <View className="flex-row items-center">
             <Text className="text-gray-400 text-sm">
-              Take • {recordings.length} available
+              Take • {validRecordings.length} available
             </Text>
-            {recordings.length > 1 && (
+            {validRecordings.length > 1 && (
               <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
             )}
           </View>

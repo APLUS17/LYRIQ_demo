@@ -2,19 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import { useLyricStore } from '../state/lyricStore';
 import RecordingModal from './RecordingModal';
 
 // Audio Player Component
 function AudioPlayer() {
   const { recordings } = useLyricStore();
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentRecording, setCurrentRecording] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [currentRecording, setCurrentRecording] = useState<any>(null);
+  
+  // Use modern expo-audio hook - this handles all audio management
+  const player = useAudioPlayer(currentRecording?.uri || null);
   const positionUpdateRef = useRef<NodeJS.Timeout | null>(null);
   
   // Fixed waveform heights to prevent re-render performance issues
@@ -38,17 +39,35 @@ function AudioPlayer() {
     }
   }, [recordings]);
 
-  // Cleanup on unmount
+  // Handle playback status updates with modern hook
   useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
+    if (player.playing) {
+      // Start position updates when playing
+      positionUpdateRef.current = setInterval(() => {
+        const currentPos = player.currentTime || 0;
+        const duration = player.duration || 1;
+        
+        setCurrentTime(Math.floor(currentPos));
+        setProgress(duration > 0 ? currentPos / duration : 0);
+        
+        if (duration > 0 && !totalTime) {
+          setTotalTime(Math.floor(duration));
+        }
+      }, 1000);
+    } else {
+      // Clear interval when not playing
+      if (positionUpdateRef.current) {
+        clearInterval(positionUpdateRef.current);
+        positionUpdateRef.current = null;
       }
+    }
+
+    return () => {
       if (positionUpdateRef.current) {
         clearInterval(positionUpdateRef.current);
       }
     };
-  }, [sound]);
+  }, [player.playing, player.currentTime, player.duration, totalTime]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -56,7 +75,7 @@ function AudioPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = () => {
     // If no recordings exist, show helpful message
     if (recordings.length === 0) {
       Alert.alert('No Recordings', 'Record some audio first by tapping the record button below.');
@@ -65,139 +84,59 @@ function AudioPlayer() {
 
     // If no current recording selected, use the first one
     if (!currentRecording && recordings.length > 0) {
-      setCurrentRecording(recordings[0]);
-      setTotalTime(recordings[0].duration || 0);
+      const validRecording = recordings.find(rec => 
+        rec.uri && typeof rec.uri === 'string' && rec.uri.trim() !== ''
+      );
+      
+      if (validRecording) {
+        setCurrentRecording(validRecording);
+        setTotalTime(validRecording.duration || 0);
+      }
       return;
     }
 
     try {
-      if (sound) {
-        if (isPlaying) {
-          await sound.pauseAsync();
-          setIsPlaying(false);
-          if (positionUpdateRef.current) {
-            clearInterval(positionUpdateRef.current);
-          }
-        } else {
-          await sound.playAsync();
-          setIsPlaying(true);
-          startPositionUpdates();
-        }
+      // Validate recording URI
+      if (!currentRecording?.uri || typeof currentRecording.uri !== 'string' || currentRecording.uri.trim() === '') {
+        Alert.alert('Invalid Recording', 'This recording file is invalid. Please record a new one.');
+        return;
+      }
+
+      // Use modern player controls
+      if (player.playing) {
+        player.pause();
       } else {
-        // Validate recording URI
-        if (!currentRecording.uri) {
-          Alert.alert('Invalid Recording', 'This recording file is corrupted. Please record a new one.');
-          return;
-        }
-
-        // Additional URI validation
-        if (typeof currentRecording.uri !== 'string' || currentRecording.uri.trim() === '') {
-          Alert.alert('Invalid Recording', 'This recording file path is invalid. Please record a new one.');
-          return;
-        }
-
-        // Set audio mode for playback
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-        });
-
-        // Load and play the recording with better error handling
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: currentRecording.uri },
-          { 
-            shouldPlay: true,
-            isLooping: false,
-            volume: 1.0,
-          }
-        );
-        
-        setSound(newSound);
-        setIsPlaying(true);
-        
-        // Use recording metadata for duration if available
-        if (currentRecording.duration) {
-          setTotalTime(currentRecording.duration);
-        }
-        
-        // Set up playback status updates
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            if (status.durationMillis && !currentRecording.duration) {
-              setTotalTime(Math.floor(status.durationMillis / 1000));
-            }
-            
-            if (status.didJustFinish) {
-              setIsPlaying(false);
-              setCurrentTime(0);
-              setProgress(0);
-              if (positionUpdateRef.current) {
-                clearInterval(positionUpdateRef.current);
-              }
-            }
-          }
-        });
-        
-        startPositionUpdates();
+        player.play();
       }
     } catch (error) {
       console.error('Error playing audio:', error);
       Alert.alert('Playback Error', 'Unable to play this recording. Please try recording new audio.');
-      
-      // Reset state on error
-      setIsPlaying(false);
-      if (sound) {
-        sound.unloadAsync();
-        setSound(null);
-      }
     }
   };
 
-  const startPositionUpdates = () => {
-    positionUpdateRef.current = setInterval(async () => {
-      if (sound) {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded && status.isPlaying) {
-          const currentTimeMs = status.positionMillis || 0;
-          const currentTimeSec = Math.floor(currentTimeMs / 1000);
-          const totalTimeSec = Math.floor((status.durationMillis || 1) / 1000);
-          
-          setCurrentTime(currentTimeSec);
-          setProgress(totalTimeSec > 0 ? currentTimeSec / totalTimeSec : 0);
-        }
-      }
-    }, 1000);
-  };
-
-  const handleSeek = async (newProgress: number) => {
-    if (!sound || !currentRecording) return;
+  const handleSeek = (newProgress: number) => {
+    if (!currentRecording || !player.duration) return;
     
     try {
-      const status = await sound.getStatusAsync();
-      if (status.isLoaded) {
-        const newPositionMs = newProgress * (status.durationMillis || 0);
-        await sound.setPositionAsync(newPositionMs);
-        const newTime = Math.floor(newPositionMs / 1000);
-        setCurrentTime(newTime);
-        setProgress(newProgress);
-      }
+      const newTime = newProgress * player.duration;
+      player.seekTo(newTime);
+      setCurrentTime(Math.floor(newTime));
+      setProgress(newProgress);
     } catch (error) {
       console.error('Error seeking:', error);
     }
   };
 
-  const handleSkipBack = async () => {
+  const handleSkipBack = () => {
     const newTime = Math.max(0, currentTime - 15);
     const newProgress = totalTime > 0 ? newTime / totalTime : 0;
-    await handleSeek(newProgress);
+    handleSeek(newProgress);
   };
 
-  const handleSkipForward = async () => {
+  const handleSkipForward = () => {
     const newTime = Math.min(totalTime, currentTime + 15);
     const newProgress = totalTime > 0 ? newTime / totalTime : 0;
-    await handleSeek(newProgress);
+    handleSeek(newProgress);
   };
 
   // Filter valid recordings
@@ -360,10 +299,10 @@ function AudioPlayer() {
           }}
         >
           <Ionicons
-            name={isPlaying ? "pause" : "play"}
+            name={player.playing ? "pause" : "play"}
             size={32}
             color="black"
-            style={{ marginLeft: isPlaying ? 0 : 3 }}
+            style={{ marginLeft: player.playing ? 0 : 3 }}
           />
         </Pressable>
         

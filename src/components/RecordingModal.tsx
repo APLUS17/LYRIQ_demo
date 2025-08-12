@@ -6,6 +6,7 @@ import {
   View,
   Modal,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
@@ -17,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLyricStore } from '../state/lyricStore';
+import { validateAudioFile } from '../utils/audioValidation';
 import Recorder from './Recorder';
 
 const { height } = Dimensions.get('window');
@@ -83,17 +85,41 @@ export default function RecordingModal() {
             onStart={() => {
               // Recording started
             }}
-            onStop={(duration, uri) => {
-              const { addRecording } = useLyricStore.getState();
-              addRecording({
-                name: `Take ${new Date().toLocaleTimeString()}`,
-                uri: uri,
-                duration: duration,
-              });
-              // Auto-close modal after recording
-              setTimeout(() => {
-                toggleRecordingModal(false);
-              }, 500);
+            onStop={async (duration, uri) => {
+              try {
+                console.log('Validating recording:', { uri, duration });
+                
+                // Validate the recording using our utility
+                const validation = await validateAudioFile(uri);
+                
+                if (!validation.isValid) {
+                  console.error('Recording validation failed:', validation.error);
+                  Alert.alert(
+                    'Recording Error', 
+                    `Recording could not be saved: ${validation.error}`
+                  );
+                  return;
+                }
+
+                console.log('Recording validation passed:', validation);
+                
+                const { addRecording } = useLyricStore.getState();
+                addRecording({
+                  name: `Take ${new Date().toLocaleTimeString()}`,
+                  uri: uri,
+                  duration: duration,
+                });
+                console.log('Recording saved successfully:', { uri, duration });
+                
+                // Auto-close modal after recording
+                setTimeout(() => {
+                  toggleRecordingModal(false);
+                }, 500);
+                
+              } catch (error) {
+                console.error('Error processing recording:', error);
+                Alert.alert('Recording Error', 'Failed to save the recording. Please try again.');
+              }
             }}
             visualizerBars={32}
           />

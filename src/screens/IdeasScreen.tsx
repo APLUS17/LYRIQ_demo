@@ -31,6 +31,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   
   // Get recordings from the store
   const { recordings, sections, removeRecording } = useLyricStore();
+  const storeRef = useRef(useLyricStore.getState());
+  useEffect(() => useLyricStore.subscribe((s) => (storeRef.current = s)), []);
 
   // --- Takes player state (voice memos style) ---
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -237,20 +239,29 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     { key: 'takes', label: 'Takes', icon: 'mic-outline' },
   ];
 
+  const openProjectFromIdea = (idea: IdeaCard) => {
+    const { projects, createProject, loadProject } = storeRef.current;
+    // Find by name
+    const existing = projects.find(p => p.name === idea.title);
+    if (existing) {
+      loadProject(existing.id);
+    } else {
+      createProject(idea.title);
+      const newProject = useLyricStore.getState().currentProject;
+      if (newProject) {
+        loadProject(newProject.id);
+      }
+    }
+    onBack();
+  };
+
   const handleEditIdea = (idea: IdeaCard) => {
-    // Only allow editing of lyrics, not recordings or verses
     if (idea.type === 'take') {
       Alert.alert('Cannot Edit Recording', 'Recordings cannot be edited. You can delete and record again.');
       return;
     }
-    if (idea.type === 'verse') {
-      Alert.alert('Cannot Edit Here', 'Verses can be edited in the main lyric editor.');
-      return;
-    }
-    
-    setEditingIdea(idea);
-    setEditTitle(idea.title);
-    setEditContent(idea.content);
+    // For lyrics and verses, open in editor as requested
+    openProjectFromIdea(idea);
   };
 
   const handleSaveEdit = () => {

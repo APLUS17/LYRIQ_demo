@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
@@ -258,8 +258,31 @@ function MainScreen() {
     isPerformanceMode,
     togglePerformanceMode,
     saveCurrentProject,
-    toggleStarSection
+    toggleStarSection,
+    currentProject,
+    renameProject
   } = useLyricStore();
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+  const lastTitleTapRef = useRef<number>(0);
+
+  const displayedTitle = currentProject?.name || "Untitled";
+
+  const commitTitle = useCallback(async () => {
+    const newName = titleInput.trim();
+    setIsEditingTitle(false);
+    if (!newName || newName === displayedTitle) return;
+    // Ensure a project exists, then rename
+    if (!currentProject) {
+      saveCurrentProject();
+    }
+    const proj = useLyricStore.getState().currentProject;
+    if (proj) {
+      renameProject(proj.id, newName);
+    }
+  }, [titleInput, displayedTitle, currentProject, renameProject, saveCurrentProject]);
 
   /* callback to open modal */
   const openRecorder = useCallback(() => toggleRecordingModal(true), [toggleRecordingModal]);
@@ -298,8 +321,36 @@ function MainScreen() {
           >
             <Ionicons name="menu" size={24} color="#9CA3AF" />
           </Pressable>
-          
-          <Text className="text-4xl font-light text-white">LYRIQ</Text>
+
+          {/* Title: double-tap to rename */}
+          {isEditingTitle ? (
+            <TextInput
+              value={titleInput}
+              onChangeText={setTitleInput}
+              autoFocus
+              onBlur={commitTitle}
+              onSubmitEditing={commitTitle}
+              placeholder="Untitled"
+              placeholderTextColor="#9CA3AF"
+              className="text-4xl font-light text-white"
+              style={{ minWidth: 120 }}
+            />
+          ) : (
+            <Pressable
+              onPress={() => {
+                const now = Date.now();
+                if (now - (lastTitleTapRef.current || 0) < 300) {
+                  setIsEditingTitle(true);
+                  setTitleInput(displayedTitle);
+                }
+                lastTitleTapRef.current = now;
+              }}
+            >
+              <Text className="text-4xl font-light text-white" numberOfLines={1}>
+                {displayedTitle}
+              </Text>
+            </Pressable>
+          )}
         </View>
         
         <View className="flex-row items-center" style={{ gap: 12 }}>

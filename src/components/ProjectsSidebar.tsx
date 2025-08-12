@@ -33,6 +33,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
     renameProject,
     recordings,
     getStarredSections,
+    sections,
   } = useLyricStore();
 
   React.useEffect(() => {
@@ -165,7 +166,19 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                       <Text className="text-gray-200 text-sm" numberOfLines={1}>
                         {project.name}
                       </Text>
+                      {/* Lyrics snippet */}
+                      {!!project.sections?.length && (
+                        <Text className="text-gray-500 text-xs mt-1" numberOfLines={1}>
+                          {project.sections.map(s => s.content).join(' ').slice(0, 80)}
+                        </Text>
+                      )}
                     </View>
+                    <Pressable
+                      onPress={() => handleDeleteProject(project.id, project.name)}
+                      className="w-8 h-8 rounded-full bg-gray-800 items-center justify-center ml-2"
+                    >
+                      <Ionicons name="trash" size={14} color="#EF4444" />
+                    </Pressable>
                   </Pressable>
                 ))}
 

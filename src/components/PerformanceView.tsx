@@ -207,17 +207,23 @@ function AudioPlayer() {
 
   if (validRecordings.length === 0) {
     return (
-      <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
-        <View className="items-center py-8">
-          <Ionicons name="musical-notes-outline" size={48} color="#4B5563" />
-          <Text className="text-gray-400 text-center mt-4">
+      <View className="bg-gray-900 rounded-3xl mx-4 mb-6" style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+        elevation: 20,
+      }}>
+        <View className="items-center py-12 px-6">
+          <Ionicons name="musical-notes-outline" size={64} color="#4B5563" />
+          <Text className="text-gray-300 text-center mt-6 text-lg font-medium">
             {recordings.length === 0 
               ? "No recordings available\nRecord a take to enable playback"
               : "No valid recordings found\nPlease record new audio"
             }
           </Text>
           {recordings.length > 0 && (
-            <Text className="text-gray-500 text-xs mt-2">
+            <Text className="text-gray-500 text-sm mt-3">
               ({recordings.length} corrupted recording{recordings.length > 1 ? 's' : ''} found)
             </Text>
           )}
@@ -227,9 +233,15 @@ function AudioPlayer() {
   }
 
   return (
-    <View className="bg-gray-800 rounded-2xl p-6 mx-6 mb-6">
+    <View className="bg-gray-900 rounded-3xl mx-4 mb-6" style={{
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.4,
+      shadowRadius: 20,
+      elevation: 20,
+    }}>
       {/* Track Info */}
-      <View className="items-center mb-4">
+      <View className="items-center pt-8 pb-6 px-6">
         <Pressable 
           onPress={() => {
             // Filter valid recordings only
@@ -256,22 +268,22 @@ function AudioPlayer() {
           }}
           className="items-center"
         >
-          <Text className="text-white text-xl font-medium mb-1" numberOfLines={1}>
+          <Text className="text-white text-2xl font-semibold mb-2" numberOfLines={1}>
             {currentRecording?.name || 'No Recording'}
           </Text>
           <View className="flex-row items-center">
-            <Text className="text-gray-400 text-sm">
+            <Text className="text-gray-400 text-sm font-medium">
               Take • {validRecordings.length} available
             </Text>
             {validRecordings.length > 1 && (
-              <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+              <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 6 }} />
             )}
           </View>
         </Pressable>
       </View>
 
       {/* Waveform/Progress Bar */}
-      <View className="mb-6">
+      <View className="mb-8 px-6">
         <Pressable
           onPress={(event) => {
             const { locationX } = event.nativeEvent;
@@ -279,16 +291,16 @@ function AudioPlayer() {
             const newProgress = locationX / width;
             handleSeek(Math.max(0, Math.min(1, newProgress)));
           }}
-          className="h-16 justify-center"
+          className="h-20 justify-center"
         >
-          <View className="h-12 flex-row items-center justify-center" style={{ gap: 1 }}>
+          <View className="h-16 flex-row items-center justify-center" style={{ gap: 2 }}>
             {waveHeights.map((height, i) => (
               <View
                 key={i}
-                className="w-1 rounded-full"
+                className="w-1.5 rounded-full"
                 style={{
-                  height: Math.max(4, height),
-                  backgroundColor: i < progress * 80 ? '#FFFF00' : '#4B5563',
+                  height: Math.max(6, height * 1.2),
+                  backgroundColor: i < progress * 80 ? '#10B981' : '#374151',
                 }}
               />
             ))}
@@ -296,14 +308,19 @@ function AudioPlayer() {
         </Pressable>
         
         {/* Time Display */}
-        <Text className="text-gray-300 text-center text-sm mt-2">
-          {formatTime(currentTime)} / {formatTime(totalTime)}
-        </Text>
+        <View className="flex-row justify-between items-center mt-4">
+          <Text className="text-gray-400 text-sm font-medium">
+            {formatTime(currentTime)}
+          </Text>
+          <Text className="text-gray-400 text-sm font-medium">
+            {formatTime(totalTime)}
+          </Text>
+        </View>
       </View>
 
       {/* Control Buttons */}
-      <View className="flex-row items-center justify-center"
-        style={{ gap: 32 }}>
+      <View className="flex-row items-center justify-center pb-8"
+        style={{ gap: 36 }}>
         <Pressable 
           onPress={() => {
             const currentIndex = recordings.findIndex(r => r.id === currentRecording?.id);
@@ -319,35 +336,42 @@ function AudioPlayer() {
               }
             }
           }}
-          className="p-2"
+          className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
         >
-          <Ionicons name="play-skip-back" size={28} color="white" />
+          <Ionicons name="play-skip-back" size={24} color="white" />
         </Pressable>
         
         <Pressable 
           onPress={handleSkipBack}
-          className="p-2"
+          className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
         >
-          <Ionicons name="play-back" size={24} color="#9CA3AF" />
+          <Ionicons name="play-back" size={20} color="#9CA3AF" />
         </Pressable>
         
         <Pressable
           onPress={handlePlayPause}
-          className="w-16 h-16 rounded-full bg-white items-center justify-center"
+          className="w-20 h-20 rounded-full bg-white items-center justify-center"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
         >
           <Ionicons
             name={isPlaying ? "pause" : "play"}
-            size={24}
+            size={32}
             color="black"
-            style={{ marginLeft: isPlaying ? 0 : 2 }}
+            style={{ marginLeft: isPlaying ? 0 : 3 }}
           />
         </Pressable>
         
         <Pressable 
           onPress={handleSkipForward}
-          className="p-2"
+          className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
         >
-          <Ionicons name="play-forward" size={24} color="#9CA3AF" />
+          <Ionicons name="play-forward" size={20} color="#9CA3AF" />
         </Pressable>
         
         <Pressable 
@@ -365,9 +389,9 @@ function AudioPlayer() {
               }
             }
           }}
-          className="p-2"
+          className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
         >
-          <Ionicons name="play-skip-forward" size={28} color="white" />
+          <Ionicons name="play-skip-forward" size={24} color="white" />
         </Pressable>
       </View>
     </View>
@@ -397,35 +421,36 @@ export default function PerformanceView() {
       );
     }
 
-    return sections.map((section, index) => {
+    return sections.map((section) => {
       if (!section || !section.id) return null; // Safety check
       
       return (
-        <View key={section.id} className="mb-8">
+        <View key={section.id} className="mb-10">
           {/* Section Header */}
           <View 
-            className="mb-4 px-4 py-2 rounded-lg self-start"
-            style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
+            className="mb-5 px-5 py-3 rounded-xl self-start"
+            style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
           >
             <Text 
-              className="text-blue-300 font-semibold text-lg"
+              className="text-emerald-300 font-bold text-base tracking-wide uppercase"
               style={{ fontFamily: 'System' }}
             >
-              [{section.title || 'Untitled'}]
+              {section.title || 'Untitled'}
             </Text>
           </View>
           
           {/* Section Content */}
           <Text 
-            className="text-gray-200 text-lg leading-8 pl-2"
+            className="text-gray-100 text-xl leading-10 pl-1"
             style={{ 
               fontFamily: 'Georgia',
-              lineHeight: 32,
+              lineHeight: 40,
+              fontWeight: '400',
             }}
             selectable={false} // Prevent text selection and keyboard popup
           >
             {section.content || (
-              <Text className="text-gray-500 italic">
+              <Text className="text-gray-500 italic text-lg">
                 (No lyrics written for this section)
               </Text>
             )}
@@ -437,13 +462,18 @@ export default function PerformanceView() {
 
   return (
     <View className="flex-1" style={{ 
-      backgroundColor: '#1A1A1A',
-      paddingTop: insets.top + 20 
+      backgroundColor: '#000000',
+      paddingTop: insets.top + 16 
     }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-6 mb-6">
-        <Text className="text-4xl font-light text-white">LYRIQ</Text>
-        <View className="w-10" />
+      <View className="flex-row items-center justify-between px-6 mb-8">
+        <Text className="text-3xl font-bold text-white tracking-wide">LYRIQ</Text>
+        <Pressable
+          onPress={() => togglePerformanceMode(false)}
+          className="w-10 h-10 rounded-full bg-gray-800 items-center justify-center"
+        >
+          <Ionicons name="create" size={18} color="#9CA3AF" />
+        </Pressable>
       </View>
 
       {/* Audio Player */}
@@ -452,22 +482,22 @@ export default function PerformanceView() {
       {/* Elevated Lyrics Card */}
       <View className="flex-1 mx-4 mb-4">
         <View 
-          className="flex-1 bg-gray-800 rounded-3xl"
+          className="flex-1 bg-gray-900 rounded-3xl"
           style={{
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 16,
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.4,
+            shadowRadius: 20,
+            elevation: 20,
           }}
         >
           <ScrollView 
-            className="flex-1 p-6"
+            className="flex-1 px-8 py-6"
             showsVerticalScrollIndicator={true}
             indicatorStyle="white"
             contentContainerStyle={{ 
-              paddingTop: 12,
-              paddingBottom: 20,
+              paddingTop: 16,
+              paddingBottom: 24,
             }}
             decelerationRate="normal"
             scrollEventThrottle={16}
@@ -481,27 +511,33 @@ export default function PerformanceView() {
       <View 
         className="flex-row items-center justify-between px-8"
         style={{ 
-          paddingBottom: Math.max(insets.bottom || 0, 20),
-          paddingTop: 16,
+          paddingBottom: Math.max(insets.bottom || 0, 24),
+          paddingTop: 20,
         }}
       >
-        {/* Record Button (left side - where "notes" is in screenshot) */}
+        {/* Record Button */}
         <Pressable
           onPress={() => toggleRecordingModal(true)}
           className="items-center"
         >
-          <View className="w-12 h-12 bg-red-500 rounded-full items-center justify-center mb-2">
-            <Ionicons name="mic" size={20} color="white" />
+          <View className="w-14 h-14 bg-red-500 rounded-full items-center justify-center mb-3" style={{
+            shadowColor: '#EF4444',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}>
+            <Ionicons name="mic" size={22} color="white" />
           </View>
-          <Text className="text-gray-400 text-xs">record</Text>
+          <Text className="text-gray-400 text-sm font-medium">record</Text>
         </Pressable>
 
-        {/* Edit Button (right side - no label) */}
+        {/* Edit Button */}
         <Pressable
           onPress={() => togglePerformanceMode(false)}
-          className="p-2"
+          className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
         >
-          <Ionicons name="create" size={24} color="#9CA3AF" />
+          <Ionicons name="create" size={20} color="#9CA3AF" />
         </Pressable>
       </View>
 

@@ -49,7 +49,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
 
   const formatClock = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    return `${mins}m`;
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const formatWhen = (d: Date) => {

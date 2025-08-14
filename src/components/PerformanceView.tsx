@@ -105,7 +105,8 @@ function AudioPlayer() {
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    return `${mins}m`;
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handlePlayPause = async () => {
@@ -221,8 +222,14 @@ function AudioPlayer() {
       <View className="items-center pt-8 pb-6 px-6">
         <Pressable 
           onPress={() => {
-            if (validRecordings.length > 0) {
-              setShowPicker(!showPicker);
+            const list = validRecordings;
+            if (list.length > 1) {
+              const currentIndex = list.findIndex(r => r.id === currentRecording?.id);
+              const nextIndex = (currentIndex + 1) % list.length;
+              setCurrentRecording(list[nextIndex]);
+              setTotalTime(list[nextIndex].duration || 0);
+              setCurrentTime(0);
+              setProgress(0);
             }
           }}
           className="items-center"
@@ -230,14 +237,6 @@ function AudioPlayer() {
           <Text className="text-white text-2xl font-semibold mb-2" numberOfLines={1}>
             {currentRecording?.name || 'No Recording'}
           </Text>
-          <View className="flex-row items-center">
-            <Text className="text-gray-400 text-sm font-medium">
-              MUMBL • {validRecordings.length} available
-            </Text>
-            {validRecordings.length > 1 && (
-              <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 6 }} />
-            )}
-          </View>
         </Pressable>
        </View>
 

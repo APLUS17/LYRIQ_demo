@@ -19,7 +19,8 @@ interface ProjectsSidebarProps {
 export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }: ProjectsSidebarProps) {
   const insets = useSafeAreaInsets();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectName, setNewProjectName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   
   const translateX = useSharedValue(-100);
   const opacity = useSharedValue(0);
@@ -93,6 +94,12 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
     );
   }, [projects]);
 
+  const filteredProjects = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return sortedProjects;
+    return sortedProjects.filter(p => p.name.toLowerCase().includes(q));
+  }, [sortedProjects, searchQuery]);
+
   return (
     <>
       <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -130,15 +137,33 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-              {/* New Song Button */}
+              {/* Search + Pen */}
               <View className="px-3 py-4">
-                <Pressable
-                  onPress={() => setShowNewProjectModal(true)}
-                  className="flex-row items-center justify-center p-3 rounded-lg border border-gray-600 bg-transparent active:bg-gray-800"
-                >
-                  <Ionicons name="add" size={16} color="white" />
-                  <Text className="text-white font-medium ml-2">New song</Text>
-                </Pressable>
+                <View className="flex-row items-center" style={{ gap: 8 }}>
+                  <View className="flex-1">
+                    <View className="relative">
+                      <Ionicons name="search" size={16} color="#9CA3AF" style={{ position: "absolute", left: 12, top: 14 }} />
+                      <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholder="Search"
+                        placeholderTextColor="#9CA3AF"
+                        className="bg-gray-800 text-white rounded-xl px-10 py-3"
+                        accessibilityLabel="Search projects"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="search"
+                      />
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => setShowNewProjectModal(true)}
+                    className="w-11 h-11 rounded-xl border border-gray-600 items-center justify-center"
+                    accessibilityLabel="Create new song"
+                  >
+                    <Ionicons name="create-outline" size={18} color="white" />
+                  </Pressable>
+                </View>
               </View>
 
               {/* Explore LYRIQs */}
@@ -157,7 +182,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
 
               {/* Recent Songs List */}
               <View className="px-3">
-                {sortedProjects.map((project) => (
+                {filteredProjects.map((project) => (
                   <Pressable
                     key={project.id}
                     onPress={() => {
@@ -187,10 +212,17 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                   </Pressable>
                 ))}
 
-                {projects.length === 0 && (
+                {projects.length === 0 && searchQuery.trim() === "" && (
                   <View className="px-3 py-8">
                     <Text className="text-gray-400 text-center text-sm">
                       No songs yet. Create your first song above!
+                    </Text>
+                  </View>
+                )}
+                {searchQuery.trim() !== "" && filteredProjects.length === 0 && (
+                  <View className="px-3 py-8">
+                    <Text className="text-gray-400 text-center text-sm">
+                      No results for "{searchQuery}"
                     </Text>
                   </View>
                 )}

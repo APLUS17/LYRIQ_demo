@@ -30,7 +30,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [editContent, setEditContent] = useState('');
   
   // Get recordings from the store
-  const { recordings, sections, removeRecording } = useLyricStore();
+  const { recordings, sections, removeRecording, updateRecordingName } = useLyricStore();
   const storeRef = useRef(useLyricStore.getState());
   useEffect(() => useLyricStore.subscribe((s) => (storeRef.current = s)), []);
 
@@ -41,13 +41,27 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [showTakesPicker, setShowTakesPicker] = useState(false);
+  const [actionsId, setActionsId] = useState<string | null>(null);
+  const [renameVisible, setRenameVisible] = useState(false);
+  const [renameInput, setRenameInput] = useState("");
 
   const selectedRecording = recordings.find(r => r.id === selectedId) || null;
 
   const formatClock = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     return `${mins}m`;
+  };
+
+  const formatWhen = (d: Date) => {
+    const dt = new Date(d);
+    const now = new Date();
+    const isSameDay = dt.toDateString() === now.toDateString();
+    const yest = new Date(now);
+    yest.setDate(now.getDate() - 1);
+    const isYesterday = dt.toDateString() === yest.toDateString();
+    if (isSameDay) return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    if (isYesterday) return "Yesterday";
+    return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
   // Load sound when selected changes
@@ -175,82 +189,42 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     if (items.length === 0) {
       return (
         <View className="items-center py-20">
-          <Text className="text-gray-300 text-lg mb-2">No takes yet</Text>
-          <Text className="text-gray-500 text-sm">Record your first take from the editor</Text>
+          <Text className="text-gray-300 text-lg mb-2">No recordings yet</Text>
+          <Text className="text-gray-500 text-sm">Record your first MUMBL from the editor</Text>
         </View>
       );
     }
 
     return (
       <>
-        {/* Header like Voice Memos current selection */}
-        <View className="mb-6">
-          <View className="bg-gray-800 rounded-2xl p-4">
-            <Text className="text-white text-base font-medium mb-2" numberOfLines={1}>
-              {selectedRecording?.name || 'No Recording'}
-            </Text>
-            {/* MUMBL dropdown trigger */}
-            <Pressable onPress={() => setShowTakesPicker(!showTakesPicker)} className="self-center mb-2 flex-row items-center">
-              <Text className="text-gray-400 text-xs font-medium">MUMBL • {items.length} available</Text>
-              {items.length > 0 && <Ionicons name="chevron-down" size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />}
-            </Pressable>
-            {showTakesPicker && (
-              <View className="absolute left-4 right-4 z-50" style={{ top: 56 }}>
-                <View className="bg-gray-800 rounded-2xl p-2" style={{ maxHeight: 260 }}>
-                  <ScrollView>
-                    {items.map(r => (
-                      <Pressable key={r.id} onPress={() => { setSelectedId(r.id); setShowTakesPicker(false); }} className="flex-row items-center px-3 py-3 rounded-xl">
-                        <Ionicons name="mic-outline" size={16} color="#9CA3AF" />
-                        <Text className="text-gray-100 text-sm ml-3 flex-1" numberOfLines={1}>{r.name}</Text>
-                        <Text className="text-gray-400 text-xs mr-2">{Math.floor((r.duration || 0) / 60)}m</Text>
-                        {selectedRecording?.id === r.id && <Ionicons name="checkmark" size={16} color="#10B981" />}
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-            )}
-            <View className="flex-row items-center justify-between">
-              <Pressable onPress={() => seekBy(-15)} className="w-12 h-12 rounded-full bg-gray-700 items-center justify-center">
-                <Ionicons name="play-back" size={20} color="#E5E7EB" />
-              </Pressable>
-              <Pressable onPress={togglePlayPause} className="w-14 h-14 rounded-full bg-white items-center justify-center">
-                <Ionicons name={isPlaying ? 'pause' : 'play'} size={24} color="#111827" />
-              </Pressable>
-              <Pressable onPress={() => seekBy(15)} className="w-12 h-12 rounded-full bg-gray-700 items-center justify-center">
-                <Ionicons name="play-forward" size={20} color="#E5E7EB" />
-              </Pressable>
-            </View>
-            <View className="flex-row justify-between mt-3">
-              <Text className="text-gray-300 text-xs">{formatClock(currentTime)}</Text>
-              <Text className="text-gray-300 text-xs">-{formatClock(Math.max(totalTime - currentTime, 0))}</Text>
-            </View>
-          </View>
-        </View>
+        {/* Large Title */}
+        <Text className="text-white font-bold mb-4" style={{ fontSize: 34 }}>All Recordings</Text>
 
-        {/* List of recordings */}
-        <View>
-          {items.map((r) => (
+        {/* Recording Rows */}
+        <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#111111" }}>
+          {items.map((r, idx) => (
             <Pressable
               key={r.id}
               onPress={() => setSelectedId(r.id)}
-              className="flex-row items-center justify-between py-4 border-b border-gray-800"
+              className={`flex-row items-center justify-between px-4 ${idx !== items.length - 1 ? "border-b border-gray-800" : ""}`}
+              style={{ height: 56 }}
             >
               <View className="flex-1 pr-3">
-                <Text className="text-white text-base" numberOfLines={1}>{r.name}</Text>
-                <Text className="text-gray-500 text-xs mt-1">
-                  {new Date(r.createdAt).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                </Text>
+                <Text className="text-white text-base font-medium" numberOfLines={1}>{r.name}</Text>
+                <Text className="text-gray-500 text-xs mt-1">{formatWhen(r.createdAt as any)}</Text>
               </View>
-              <View className="flex-row items-center" style={{ gap: 12 }}>
+              <View className="flex-row items-center" style={{ gap: 10 }}>
                 <Text className="text-gray-400 text-sm">{formatClock(Math.floor(r.duration || 0))}</Text>
-                <Pressable onPress={() => removeRecording(r.id)} className="w-9 h-9 rounded-full bg-gray-800 items-center justify-center">
-                  <Ionicons name="trash" size={16} color="#EF4444" />
+                <Pressable onPress={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }} className="w-8 h-8 rounded-full items-center justify-center">
+                  <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
                 </Pressable>
               </View>
             </Pressable>
           ))}
         </View>
+
+        {/* Spacer for bottom dock */}
+        <View style={{ height: 120 }} />
       </>
     );
   };
@@ -439,8 +413,86 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         )}
       </ScrollView>
 
+      {/* Bottom Player Dock (Takes only) */}
+      {activeTab === 'takes' && (
+        <View className="absolute left-0 right-0" style={{ bottom: Math.max(insets.bottom, 16) }}>
+          <View className="px-4">
+            {/* Scrubber */}
+            <Pressable
+              onPress={(e) => {
+                const width = 320; // approx
+                const x = (e.nativeEvent as any).locationX || 0;
+                const next = Math.max(0, Math.min(1, x / width));
+                const newSec = Math.floor((totalTime || 0) * next);
+                setCurrentTime(newSec);
+                setTimeout(() => seekBy(0), 0);
+              }}
+              className="h-6 justify-center"
+            >
+              <View className="h-1 rounded-full bg-gray-700 overflow-hidden">
+                <View style={{ width: `${Math.min(100, Math.max(0, (totalTime ? (currentTime / totalTime) : 0) * 100))}%` }} className="h-1 bg-emerald-500" />
+              </View>
+              <View className="flex-row justify-between mt-1">
+                <Text className="text-gray-400 text-xs">{formatClock(currentTime)}</Text>
+                <Text className="text-gray-400 text-xs">{formatClock(totalTime)}</Text>
+              </View>
+            </Pressable>
+
+            {/* Controls */}
+            <View className="flex-row items-center justify-between mt-3">
+              <Ionicons name="analytics-outline" size={20} color="#9CA3AF" />
+              <Pressable onPress={() => seekBy(-15)} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
+                <Ionicons name="play-back" size={18} color="#E5E7EB" />
+              </Pressable>
+              <Pressable onPress={togglePlayPause} className="w-14 h-14 rounded-full bg-white items-center justify-center">
+                <Ionicons name={isPlaying ? 'pause' : 'play'} size={22} color="#111827" />
+              </Pressable>
+              <Pressable onPress={() => seekBy(15)} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
+                <Ionicons name="play-forward" size={18} color="#E5E7EB" />
+              </Pressable>
+              <Pressable onPress={() => { if (selectedRecording) removeRecording(selectedRecording.id); }} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
+                <Ionicons name="trash" size={18} color="#3B82F6" />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Actions Sheet */}
+      <Modal visible={actionsId != null} transparent animationType="fade" onRequestClose={() => setActionsId(null)}>
+        <Pressable className="flex-1 bg-black/40" onPress={() => setActionsId(null)} />
+        <View className="absolute left-0 right-0 bottom-0 bg-gray-900 rounded-t-3xl p-4">
+          <Pressable onPress={() => { setRenameVisible(true); }} className="p-4 rounded-2xl bg-gray-800 mb-2">
+            <Text className="text-white text-center">Rename</Text>
+          </Pressable>
+          <Pressable onPress={() => { if (actionsId) removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
+            <Text className="text-white text-center">Delete</Text>
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* Rename Modal */}
+      <Modal visible={renameVisible} transparent animationType="slide" onRequestClose={() => setRenameVisible(false)}>
+        <View className="flex-1 justify-center bg-black/50 p-6">
+          <View className="bg-gray-800 rounded-2xl p-6">
+            <Text className="text-white text-xl font-bold mb-4">Rename Recording</Text>
+            <TextInput value={renameInput} onChangeText={setRenameInput} placeholder="Enter name" placeholderTextColor="#6B7280" className="bg-gray-700 text-white p-4 rounded-xl mb-4" />
+            <View className="flex-row gap-3">
+              <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
+                <Text className="text-white text-center">Cancel</Text>
+              </Pressable>
+              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
+                <Text className="text-white text-center">Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Floating Add Button */}
       <View className="absolute bottom-8 right-6">
+
+
         <Pressable 
           onPress={onBack}
           className="w-16 h-16 bg-gray-800 rounded-3xl items-center justify-center"

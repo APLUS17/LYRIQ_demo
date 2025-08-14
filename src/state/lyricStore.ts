@@ -71,11 +71,13 @@ interface LyricState {
   // Recordings/Takes Management
   recordings: Recording[];
   addRecording: (recording: Omit<Recording, 'id' | 'createdAt'>) => void;
-  removeRecording: (id: string) => void;
-  
-  // Starred Sections (VERSES section)
-  getStarredSections: () => LyricSection[];
-}
+   removeRecording: (id: string) => void;
+   updateRecordingName: (id: string, name: string) => void;
+   
+   // Starred Sections (VERSES section)
+   getStarredSections: () => LyricSection[];
+ }
+
 
 export const useLyricStore = create<LyricState>()(
   persist(
@@ -303,6 +305,10 @@ export const useLyricStore = create<LyricState>()(
       
       removeRecording: (id) => set((state) => ({
         recordings: state.recordings.filter((recording) => recording.id !== id),
+      })),
+
+      updateRecordingName: (id, name) => set((state) => ({
+        recordings: state.recordings.map((r) => r.id === id ? { ...r, name } : r),
       })),
       
       // Starred Sections (VERSES section)

@@ -157,11 +157,15 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                     </View>
                   </View>
                   <Pressable
-                    onPress={() => setShowNewProjectModal(true)}
-                    className="w-11 h-11 rounded-xl border border-gray-600 items-center justify-center"
-                    accessibilityLabel="Create new song"
+                    onPress={() => {
+                      const { currentProject, saveCurrentProject } = useLyricStore.getState();
+                      if (!currentProject) { saveCurrentProject(); }
+                      onClose();
+                    }}
+                    className="w-11 h-11 rounded-xl items-center justify-center border border-gray-700"
+                    accessibilityLabel="Open project editor"
                   >
-                    <Ionicons name="create-outline" size={18} color="white" />
+                    <Ionicons name="create-outline" size={18} color="#9CA3AF" />
                   </Pressable>
                 </View>
               </View>

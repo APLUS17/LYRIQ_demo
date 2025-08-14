@@ -87,6 +87,11 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
   };
 
   const starredSections = getStarredSections();
+  const sortedProjects = React.useMemo(() => {
+    return [...projects].sort((a, b) =>
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [projects]);
 
   return (
     <>
@@ -152,14 +157,14 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
 
               {/* Recent Songs List */}
               <View className="px-3">
-                {projects.map((project) => (
+                {sortedProjects.map((project) => (
                   <Pressable
                     key={project.id}
                     onPress={() => {
                       loadProject(project.id);
                       onClose();
                     }}
-                    className="flex-row items-center p-3 rounded-lg mb-1 hover:bg-gray-800 active:bg-gray-800"
+                    className={`flex-row items-center p-3 rounded-lg mb-1 ${project.id === currentProject?.id ? "bg-gray-800" : "hover:bg-gray-800 active:bg-gray-800"}`}
                   >
                     <Ionicons name="musical-notes-outline" size={16} color="#9CA3AF" />
                     <View className="flex-1 ml-3">

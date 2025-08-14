@@ -358,6 +358,7 @@ function MainScreen() {
           <Pressable
             onPress={() => {
               saveCurrentProject();
+              setShowProjectsSidebar(true);
               setShowSaveToast(true);
               setTimeout(() => setShowSaveToast(false), 2000);
             }}

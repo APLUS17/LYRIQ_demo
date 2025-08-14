@@ -103,9 +103,12 @@ export default function RecordingModal() {
 
                 console.log('Recording validation passed:', validation);
                 
-                const { addRecording } = useLyricStore.getState();
+                const { addRecording, recordings, currentProject } = useLyricStore.getState();
+                const currentProjectId = currentProject?.id;
+                const countForProject = recordings.filter(r => r.projectId === currentProjectId).length;
+                const nextIndex = countForProject + 1;
                 addRecording({
-                  name: `Take ${new Date().toLocaleTimeString()}`,
+                  name: `MUMBL ${nextIndex}`,
                   uri: uri,
                   duration: duration,
                 });

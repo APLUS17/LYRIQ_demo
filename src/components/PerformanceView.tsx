@@ -13,6 +13,7 @@ function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [showPicker, setShowPicker] = useState(false);
   
   // expo-av Sound instance
   const [sound, setSound] = useState<Audio.Sound | null>(null);
@@ -104,8 +105,7 @@ function AudioPlayer() {
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}m`;
   };
 
   const handlePlayPause = async () => {
@@ -221,25 +221,8 @@ function AudioPlayer() {
       <View className="items-center pt-8 pb-6 px-6">
         <Pressable 
           onPress={() => {
-            // Filter valid recordings only
-            const validRecordings = recordings.filter(rec => 
-              rec.uri && typeof rec.uri === 'string' && rec.uri.trim() !== ''
-            );
-            
-            if (validRecordings.length > 1) {
-              // Cycle to next valid recording
-              const currentIndex = validRecordings.findIndex(r => r.id === currentRecording?.id);
-              const nextIndex = (currentIndex + 1) % validRecordings.length;
-              setCurrentRecording(validRecordings[nextIndex]);
-              setTotalTime(validRecordings[nextIndex].duration || 0);
-              
-              // Stop current playback
-              // Using expo-audio hook; remove stale sound refs
-              // No direct unload here; selection will switch track
-              setCurrentTime(0);
-              setProgress(0);
-              setCurrentTime(0);
-              setProgress(0);
+            if (validRecordings.length > 0) {
+              setShowPicker(!showPicker);
             }
           }}
           className="items-center"
@@ -249,17 +232,52 @@ function AudioPlayer() {
           </Text>
           <View className="flex-row items-center">
             <Text className="text-gray-400 text-sm font-medium">
-              Take • {validRecordings.length} available
+              MUMBL • {validRecordings.length} available
             </Text>
             {validRecordings.length > 1 && (
               <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 6 }} />
             )}
           </View>
         </Pressable>
-      </View>
+       </View>
 
-      {/* Waveform/Progress Bar */}
-      <View className="mb-8 px-6">
+       {/* Takes Picker Dropdown */}
+       {showPicker && (
+         <View className="px-6 z-50" style={{ position: "absolute", left: 0, right: 0, top: 76 }}>
+           <View className="bg-gray-800 rounded-2xl p-2" style={{ maxHeight: 260 }}>
+             <ScrollView>
+               {validRecordings.map((r) => (
+                 <Pressable
+                   key={r.id}
+                   onPress={() => {
+                     setCurrentRecording(r);
+                     setTotalTime(r.duration || 0);
+                     setCurrentTime(0);
+                     setProgress(0);
+                     setShowPicker(false);
+                   }}
+                   className="flex-row items-center px-3 py-3 rounded-xl"
+                 >
+                   <Ionicons name="mic-outline" size={16} color="#9CA3AF" />
+                   <Text className="text-gray-100 text-sm ml-3 flex-1" numberOfLines={1}>
+                     {r.name}
+                   </Text>
+                   <Text className="text-gray-400 text-xs mr-2">{Math.floor((r.duration || 0) / 60)}m</Text>
+                   {currentRecording?.id === r.id && (
+                     <Ionicons name="checkmark" size={16} color="#10B981" />
+                   )}
+                 </Pressable>
+               ))}
+             </ScrollView>
+           </View>
+           {/* backdrop to close */}
+           <Pressable onPress={() => setShowPicker(false)} style={{ position: "absolute", top: -1000, bottom: -1000, left: 0, right: 0 }} />
+         </View>
+       )}
+
+       {/* Waveform/Progress Bar */}
+       <View className="mb-8 px-6">
+
         <Pressable
           onPress={(event) => {
             const { locationX } = event.nativeEvent;

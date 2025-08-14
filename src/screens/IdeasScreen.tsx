@@ -41,13 +41,13 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [showTakesPicker, setShowTakesPicker] = useState(false);
 
   const selectedRecording = recordings.find(r => r.id === selectedId) || null;
 
   const formatClock = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}m`;
   };
 
   // Load sound when selected changes
@@ -146,9 +146,10 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const recordingIdeas: IdeaCard[] = recordings.map(recording => ({
     id: recording.id,
     title: recording.name,
-    content: `Duration: ${Math.floor(recording.duration / 60)}:${(recording.duration % 60).toString().padStart(2, '0')}\nRecorded: ${new Date(recording.createdAt).toLocaleDateString()}`,
+    content: `Duration: ${Math.floor((recording.duration || 0) / 60)}m\nRecorded: ${new Date(recording.createdAt).toLocaleDateString()}`,
     type: 'take' as const
   }));
+
 
   // Convert sections to idea format for verses tab  
   const verseIdeas: IdeaCard[] = sections
@@ -185,9 +186,30 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         {/* Header like Voice Memos current selection */}
         <View className="mb-6">
           <View className="bg-gray-800 rounded-2xl p-4">
-            <Text className="text-white text-base font-medium mb-4" numberOfLines={1}>
+            <Text className="text-white text-base font-medium mb-2" numberOfLines={1}>
               {selectedRecording?.name || 'No Recording'}
             </Text>
+            {/* MUMBL dropdown trigger */}
+            <Pressable onPress={() => setShowTakesPicker(!showTakesPicker)} className="self-center mb-2 flex-row items-center">
+              <Text className="text-gray-400 text-xs font-medium">MUMBL • {items.length} available</Text>
+              {items.length > 0 && <Ionicons name="chevron-down" size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />}
+            </Pressable>
+            {showTakesPicker && (
+              <View className="absolute left-4 right-4 z-50" style={{ top: 56 }}>
+                <View className="bg-gray-800 rounded-2xl p-2" style={{ maxHeight: 260 }}>
+                  <ScrollView>
+                    {items.map(r => (
+                      <Pressable key={r.id} onPress={() => { setSelectedId(r.id); setShowTakesPicker(false); }} className="flex-row items-center px-3 py-3 rounded-xl">
+                        <Ionicons name="mic-outline" size={16} color="#9CA3AF" />
+                        <Text className="text-gray-100 text-sm ml-3 flex-1" numberOfLines={1}>{r.name}</Text>
+                        <Text className="text-gray-400 text-xs mr-2">{Math.floor((r.duration || 0) / 60)}m</Text>
+                        {selectedRecording?.id === r.id && <Ionicons name="checkmark" size={16} color="#10B981" />}
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
             <View className="flex-row items-center justify-between">
               <Pressable onPress={() => seekBy(-15)} className="w-12 h-12 rounded-full bg-gray-700 items-center justify-center">
                 <Ionicons name="play-back" size={20} color="#E5E7EB" />
@@ -217,11 +239,11 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               <View className="flex-1 pr-3">
                 <Text className="text-white text-base" numberOfLines={1}>{r.name}</Text>
                 <Text className="text-gray-500 text-xs mt-1">
-                  {new Date(r.createdAt).toLocaleString()}
+                  {new Date(r.createdAt).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                 </Text>
               </View>
               <View className="flex-row items-center" style={{ gap: 12 }}>
-                <Text className="text-gray-400 text-sm">{formatClock(Math.floor(r.duration))}</Text>
+                <Text className="text-gray-400 text-sm">{formatClock(Math.floor(r.duration || 0))}</Text>
                 <Pressable onPress={() => removeRecording(r.id)} className="w-9 h-9 rounded-full bg-gray-800 items-center justify-center">
                   <Ionicons name="trash" size={16} color="#EF4444" />
                 </Pressable>

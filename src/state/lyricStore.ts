@@ -56,6 +56,7 @@ interface LyricState {
   loadProject: (projectId: string) => void;
   deleteProject: (projectId: string) => void;
   renameProject: (projectId: string, name: string) => void;
+  hasUnsavedChanges: () => boolean;
   
   // Current Session (working sections)
   sections: LyricSection[];
@@ -71,12 +72,12 @@ interface LyricState {
   // Recordings/Takes Management
   recordings: Recording[];
   addRecording: (recording: Omit<Recording, 'id' | 'createdAt'>) => void;
-   removeRecording: (id: string) => void;
-   updateRecordingName: (id: string, name: string) => void;
-   
-   // Starred Sections (VERSES section)
-   getStarredSections: () => LyricSection[];
- }
+  removeRecording: (id: string) => void;
+  updateRecordingName: (id: string, name: string) => void;
+  
+  // Starred Sections (VERSES section)
+  getStarredSections: () => LyricSection[];
+}
 
 
 export const useLyricStore = create<LyricState>()(
@@ -217,6 +218,17 @@ export const useLyricStore = create<LyricState>()(
             : state.currentProject,
         };
       }),
+
+      hasUnsavedChanges: () => {
+        const state = get();
+        const cp = state.currentProject;
+        if (!cp) return false;
+        const normalizeSections = (arr: LyricSection[]) => arr.map(s => ({ id: s.id, type: s.type, title: s.title, content: s.content, count: s.count, isStarred: s.isStarred, collapsed: !!s.collapsed }));
+        const normalizeRecs = (arr: Recording[]) => arr.map(r => ({ id: r.id, name: r.name, uri: r.uri, duration: r.duration, projectId: r.projectId }));
+        const a = JSON.stringify({ s: normalizeSections(state.sections), r: normalizeRecs(state.recordings) });
+        const b = JSON.stringify({ s: normalizeSections(cp.sections), r: normalizeRecs(cp.recordings) });
+        return a !== b;
+      },
 
       // Current Session Sections
       sections: [],

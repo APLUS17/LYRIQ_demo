@@ -245,6 +245,7 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [showReloadConfirm, setShowReloadConfirm] = useState(false);
   
   const { 
     sections, 
@@ -260,7 +261,13 @@ function MainScreen() {
     saveCurrentProject,
     toggleStarSection,
     currentProject,
-    renameProject
+    renameProject,
+    loadProject,
+    hasUnsavedChanges,
+    toastVisible,
+    toastMessage,
+    toastType,
+    hideToast,
   } = useLyricStore();
 
   // Title editing state
@@ -354,26 +361,47 @@ function MainScreen() {
         </View>
         
         <View className="flex-row items-center" style={{ gap: 12 }}>
-          {/* Save Button */}
-          <Pressable
-            onPress={() => {
-              saveCurrentProject();
-              setShowProjectsSidebar(true);
-              setShowSaveToast(true);
-              setTimeout(() => setShowSaveToast(false), 2000);
-            }}
-            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
-            style={{
-              shadowColor: '#2563EB',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 4,
-              elevation: 4,
-            }}
-          >
-            <Ionicons name="save" size={16} color="white" />
-            <Text className="text-white font-medium ml-2 text-sm">save</Text>
-          </Pressable>
+           {/* Save Button */}
+           <Pressable
+             onPress={() => {
+               saveCurrentProject();
+               setShowSaveToast(true);
+               setTimeout(() => setShowSaveToast(false), 2000);
+             }}
+             className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+             style={{
+               shadowColor: '#2563EB',
+               shadowOffset: { width: 0, height: 2 },
+               shadowOpacity: 0.2,
+               shadowRadius: 4,
+               elevation: 4,
+             }}
+           >
+             <Ionicons name="save" size={16} color="white" />
+             <Text className="text-white font-medium ml-2 text-sm">save</Text>
+           </Pressable>
+
+           {/* Reload Button */}
+           <Pressable
+             onPress={() => {
+               if (!currentProject) return;
+               if (hasUnsavedChanges()) { setShowReloadConfirm(true); return; }
+               loadProject(currentProject.id);
+             }}
+             className="p-2"
+             accessibilityLabel="Reload project"
+           >
+             <Ionicons name="refresh" size={22} color="#9CA3AF" />
+           </Pressable>
+           
+           {/* Performance View Toggle */}
+           <Pressable
+             onPress={() => togglePerformanceMode(true)}
+             className="p-2"
+           >
+             <Ionicons name="play" size={24} color="#9CA3AF" />
+           </Pressable>
+
           
           {/* Performance View Toggle */}
           <Pressable
@@ -440,23 +468,45 @@ function MainScreen() {
       {/* Recording Modal */}
       <RecordingModal />
       
-      {/* Save Toast */}
-      {showSaveToast && (
-        <View 
-          className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-green-600 px-4 py-2 rounded-lg z-50"
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4,
-            elevation: 8,
-          }}
-        >
-          <Text className="text-white font-medium">Project saved!</Text>
-        </View>
-      )}
-      
-      {/* Projects Sidebar */}
+       {/* Save Toast */}
+       {showSaveToast && (
+         <View 
+           className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-green-600 px-4 py-2 rounded-lg z-50"
+           style={{
+             shadowColor: '#000',
+             shadowOffset: { width: 0, height: 2 },
+             shadowOpacity: 0.3,
+             shadowRadius: 4,
+             elevation: 8,
+           }}
+         >
+           <Text className="text-white font-medium">Project saved!</Text>
+         </View>
+       )}
+
+       {/* Global Toast */}
+       <Toast visible={toastVisible} message={toastMessage} type={toastType} onHide={hideToast} />
+
+       {/* Reload Confirm */}
+       <Modal visible={showReloadConfirm} transparent animationType="fade" onRequestClose={() => setShowReloadConfirm(false)}>
+         <View className="flex-1 justify-center bg-black/50 p-6">
+           <View className="bg-gray-800 rounded-2xl p-6">
+             <Text className="text-white text-lg font-semibold mb-4">Discard unsaved edits?</Text>
+             <Text className="text-gray-300 mb-6">This will reload the last saved version of this project.</Text>
+             <View className="flex-row gap-3">
+               <Pressable onPress={() => setShowReloadConfirm(false)} className="flex-1 bg-gray-600 p-4 rounded-xl">
+                 <Text className="text-white text-center">Cancel</Text>
+               </Pressable>
+               <Pressable onPress={() => { if (currentProject) loadProject(currentProject.id); setShowReloadConfirm(false); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
+                 <Text className="text-white text-center">Reload</Text>
+               </Pressable>
+             </View>
+           </View>
+         </View>
+       </Modal>
+       
+       {/* Projects Sidebar */}
+
       <ProjectsSidebar
         visible={showProjectsSidebar}
         onClose={() => setShowProjectsSidebar(false)}

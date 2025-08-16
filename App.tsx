@@ -375,22 +375,12 @@ function MainScreen() {
            </Pressable>
 
             {/* Performance View Toggle */}
-
-           <Pressable
-             onPress={() => togglePerformanceMode(true)}
-             className="p-2"
-           >
-             <Ionicons name="play" size={24} color="#9CA3AF" />
-           </Pressable>
-
-          
-          {/* Performance View Toggle */}
-          <Pressable
-            onPress={() => togglePerformanceMode(true)}
-            className="p-2"
-          >
-            <Ionicons name="play" size={24} color="#9CA3AF" />
-          </Pressable>
+            <Pressable
+              onPress={() => togglePerformanceMode(true)}
+              className="p-2"
+            >
+              <Ionicons name="play" size={24} color="#9CA3AF" />
+            </Pressable>
         </View>
       </View>
 

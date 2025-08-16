@@ -21,6 +21,9 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [editingProjectName, setEditingProjectName] = useState("");
   
   const translateX = useSharedValue(-100);
   const opacity = useSharedValue(0);
@@ -76,6 +79,30 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
         },
       ]
     );
+  };
+
+  const handleLongPress = (project: any) => {
+    setSelectedProject(project);
+    setEditingProjectName(project.name);
+    setShowOptionsModal(true);
+  };
+
+  const handleRename = () => {
+    if (editingProjectName.trim() && selectedProject) {
+      renameProject(selectedProject.id, editingProjectName.trim());
+      setShowOptionsModal(false);
+      setSelectedProject(null);
+      setEditingProjectName("");
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedProject) {
+      handleDeleteProject(selectedProject.id, selectedProject.name);
+      setShowOptionsModal(false);
+      setSelectedProject(null);
+      setEditingProjectName("");
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -142,7 +169,18 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                 <View className="flex-row items-center" style={{ gap: 8 }}>
                   <View className="flex-1">
                     <View className="relative">
-                      <Ionicons name="search" size={16} color="#9CA3AF" style={{ position: "absolute", left: 12, top: 14 }} />
+                      <Ionicons 
+                        name="search" 
+                        size={16} 
+                        color="#9CA3AF" 
+                        style={{ 
+                          position: "absolute", 
+                          left: 12, 
+                          top: "50%",
+                          marginTop: -8,
+                          zIndex: 1
+                        }} 
+                      />
                       <TextInput
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -153,6 +191,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                         autoCapitalize="none"
                         autoCorrect={false}
                         returnKeyType="search"
+                        style={{ textAlignVertical: 'center' }}
                       />
                     </View>
                   </View>
@@ -166,6 +205,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                     }}
                     className="w-11 h-11 rounded-xl items-center justify-center border border-gray-700"
                     accessibilityLabel="Create blank project"
+                    style={{ justifyContent: 'center', alignItems: 'center' }}
                   >
                     <Ionicons name="create-outline" size={18} color="#9CA3AF" />
                   </Pressable>
@@ -195,26 +235,22 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                       loadProject(project.id);
                       onClose();
                     }}
+                    onLongPress={() => handleLongPress(project)}
                     className={`flex-row items-center p-3 rounded-lg mb-1 ${project.id === currentProject?.id ? "bg-gray-800" : "hover:bg-gray-800 active:bg-gray-800"}`}
+                    style={{ paddingLeft: 8 }}
                   >
-                    <Ionicons name="musical-notes-outline" size={16} color="#9CA3AF" />
-                    <View className="flex-1 ml-3">
-                      <Text className="text-gray-200 text-sm" numberOfLines={1}>
+                    {/* Removed music note icon */}
+                    <View className="flex-1">
+                      <Text className="text-gray-200 text-sm" numberOfLines={1} style={{ marginLeft: 0 }}>
                         {project.name}
                       </Text>
                       {/* Lyrics snippet */}
                       {!!project.sections?.length && (
-                        <Text className="text-gray-500 text-xs mt-1" numberOfLines={1}>
+                        <Text className="text-gray-500 text-xs mt-1" numberOfLines={1} style={{ marginLeft: 0 }}>
                           {project.sections.map(s => s.content).join(' ').slice(0, 80)}
                         </Text>
                       )}
                     </View>
-                    <Pressable
-                      onPress={() => handleDeleteProject(project.id, project.name)}
-                      className="w-8 h-8 rounded-full bg-gray-800 items-center justify-center ml-2"
-                    >
-                      <Ionicons name="trash" size={14} color="#EF4444" />
-                    </Pressable>
                   </Pressable>
                 ))}
 
@@ -295,6 +331,67 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
               >
                 <Text className="text-white text-center font-medium">
                   Create
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Project Options Modal */}
+      <Modal
+        visible={showOptionsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View
+            className="bg-gray-900 rounded-t-3xl p-6"
+            style={{ paddingBottom: insets.bottom + 20 }}
+          >
+            <Text className="text-xl font-medium text-white mb-4">
+              Project Options
+            </Text>
+            
+            <TextInput
+              value={editingProjectName}
+              onChangeText={setEditingProjectName}
+              placeholder="Project name..."
+              placeholderTextColor="#6B7280"
+              className="bg-gray-800 text-white p-4 rounded-xl mb-6 text-base"
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleRename}
+            />
+            
+            <View className="flex-row gap-3 mb-4">
+              <Pressable
+                onPress={handleRename}
+                className="flex-1 bg-blue-600 p-4 rounded-xl"
+              >
+                <Text className="text-white text-center font-medium">
+                  Rename
+                </Text>
+              </Pressable>
+            </View>
+
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={() => setShowOptionsModal(false)}
+                className="flex-1 bg-gray-700 p-4 rounded-xl"
+              >
+                <Text className="text-white text-center font-medium">
+                  Cancel
+                </Text>
+              </Pressable>
+              
+              <Pressable
+                onPress={handleDelete}
+                className="flex-1 bg-red-600 p-4 rounded-xl"
+              >
+                <Text className="text-white text-center font-medium">
+                  Delete
                 </Text>
               </Pressable>
             </View>

@@ -309,40 +309,45 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       <StatusBar barStyle="light-content" backgroundColor="#111827" />
       
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-4 pb-6">
-        <Pressable onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </Pressable>
-        <Text className="text-4xl font-bold text-white" style={{ fontSize: 34, fontWeight: '700' }}>Ideas</Text>
+      <View className="flex-row items-center px-4 pt-4 pb-6">
+        <Text className="text-4xl font-bold text-white" style={{ fontSize: 34, fontWeight: '700', flex: 1 }}>Ideas</Text>
         <View className="w-10 h-10 bg-gray-600 rounded-full items-center justify-center">
           <Text className="text-white font-bold text-sm">A</Text>
         </View>
       </View>
 
       {/* Tab Navigation */}
-      <View className="flex-row px-4 mb-8">
-        {tabs.map((tab) => (
+      <View className="flex-row px-4 mb-8 justify-center">
+        {[
+          { key: 'lyrics', label: 'Stickies', icon: 'document-outline' },
+          { key: 'verses', label: 'Reels', icon: 'bookmark-outline' },
+          { key: 'takes', label: 'Collections', icon: 'folder-outline' },
+        ].map((tab) => (
           <Pressable
             key={tab.key}
             onPress={() => setActiveTab(tab.key as any)}
-            className={`flex-1 items-center py-4 mx-2 rounded-2xl ${
-              activeTab === tab.key ? 'bg-gray-700' : 'bg-gray-800'
-            }`}
+            className="items-center mx-2"
+            style={{ flex: 1 }}
           >
-            <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-2 ${
-              activeTab === tab.key ? 'bg-white' : 'bg-gray-700'
-            }`}>
-              <Ionicons 
-                name={tab.icon as any} 
-                size={20} 
-                color={activeTab === tab.key ? '#111827' : '#9CA3AF'} 
+            <View style={{
+              width: 60,
+              height: 60,
+              borderRadius: 16,
+              borderWidth: 2,
+              borderColor: activeTab === tab.key ? '#fff' : '#E5E7EB',
+              backgroundColor: activeTab === tab.key ? '#fff1' : '#fff0',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 6,
+            }}>
+              <Ionicons
+                name={tab.icon as any}
+                size={28}
+                color={activeTab === tab.key ? '#fff' : '#E5E7EB'}
+                style={{ fontWeight: '300' }}
               />
             </View>
-            <Text className={`text-sm font-medium ${
-              activeTab === tab.key ? 'text-white' : 'text-gray-400'
-            }`}>
-              {tab.label}
-            </Text>
+            <Text style={{ color: activeTab === tab.key ? '#fff' : '#E5E7EB', fontSize: 14, fontWeight: '500', marginTop: 2 }}>{tab.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -351,57 +356,45 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       <ScrollView
         className="flex-1 px-4"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100, alignItems: 'center' }}
       >
-        {activeTab === 'takes' ? (
-          renderTakes()
-        ) : filteredIdeas.map((idea) => (
+        {activeTab !== 'takes' && filteredIdeas.length > 0 && (
           <View
-            key={idea.id}
-            className="bg-yellow-200 p-6 rounded-3xl mb-5 relative"
-            style={{ 
-              marginHorizontal: 8,
+            key={filteredIdeas[0].id}
+            style={{
+              backgroundColor: '#FEF08A',
+              borderRadius: 24,
+              padding: 24,
+              marginTop: 12,
+              marginBottom: 32,
+              minWidth: 280,
+              maxWidth: 340,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
+              shadowOpacity: 0.10,
               shadowRadius: 8,
-              elevation: 3
+              elevation: 3,
+              alignItems: 'flex-start',
+              position: 'relative',
             }}
           >
-            {/* Action Buttons */}
-            <View className="absolute top-4 right-4 flex-row gap-2">
-              <Pressable
-                onPress={() => handleEditIdea(idea)}
-                className="w-7 h-7 bg-yellow-300 rounded-full items-center justify-center"
-              >
-                <Ionicons name="pencil" size={14} color="#000" />
-              </Pressable>
-              <Pressable
-                onPress={() => handleDeleteIdea(idea.id, idea.title, idea.type)}
-                className="w-7 h-7 bg-red-400 rounded-full items-center justify-center"
-              >
-                <Ionicons name="trash" size={14} color="#fff" />
-              </Pressable>
-            </View>
-
-            <Text className="text-black text-lg font-semibold mb-3 pr-16" style={{ lineHeight: 24 }}>
-              {idea.title}
-            </Text>
-            <Text className="text-black text-base leading-6" style={{ lineHeight: 22 }}>
-              {idea.content}
-            </Text>
-            {/* Corner fold effect */}
-            <View className="absolute bottom-0 right-0" style={{
+            <Text style={{ color: '#222', fontWeight: '600', fontSize: 17, marginBottom: 8 }}>{filteredIdeas[0].title}</Text>
+            <Text style={{ color: '#222', fontSize: 15, lineHeight: 22 }}>{filteredIdeas[0].content}</Text>
+            {/* Folded corner */}
+            <View style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
               width: 0,
               height: 0,
-              borderLeftWidth: 20,
-              borderBottomWidth: 20,
+              borderLeftWidth: 28,
+              borderBottomWidth: 28,
               borderLeftColor: 'transparent',
-              borderBottomColor: '#FDE047'
+              borderBottomColor: '#FDE047',
+              borderBottomRightRadius: 8,
             }} />
           </View>
-        ))}
-
+        )}
         {activeTab !== 'takes' && filteredIdeas.length === 0 && (
           <View className="items-center py-20">
             <Text className="text-gray-300 text-lg mb-2">No {activeTab} yet</Text>
@@ -412,6 +405,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
             </Text>
           </View>
         )}
+        {activeTab === 'takes' && renderTakes()}
       </ScrollView>
 
       {/* Bottom Player Dock (Takes only) */}

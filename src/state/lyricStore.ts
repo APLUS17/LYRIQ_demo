@@ -44,16 +44,25 @@ interface LyricState {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
   
+  // Performance Mode State
+  isPerformanceMode: boolean;
+  togglePerformanceMode: (value?: boolean) => void;
+  
   // Project Actions
   createProject: (name: string) => void;
   loadProject: (id: string) => void;
   deleteProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
+  saveCurrentProject: () => void;
 
   // Section Actions (project-scoped)
   addSection: (type: string) => void;
   updateSection: (id: string, content: string) => void;
+  updateSectionType: (id: string, type: string) => void;
+  updateSectionCount: (id: string, count: number) => void;
   removeSection: (id: string) => void;
+  reorderSections: (fromIndex: number, toIndex: number) => void;
+  toggleStarSection: (id: string) => void;
   
   // Recording Actions (project-scoped)
   addRecording: (rec: Omit<Recording, 'id' | 'createdAt'>) => void;
@@ -63,6 +72,13 @@ interface LyricState {
   // Selector Helpers
   getSections: () => Section[];
   getRecordings: () => Recording[];
+  getStarredSections: () => Section[];
+  getSectionsForProject: (projectId: string) => Section[];
+  
+  // Computed Properties
+  sections: Section[];
+  currentProject: Project | null;
+  recordings: Recording[];
 }
 
 export const useLyricStore = create<LyricState>()(
@@ -76,8 +92,8 @@ export const useLyricStore = create<LyricState>()(
 
       // --- Recording Modal State ---
       isRecordingModalVisible: false,
-      toggleRecordingModal: (value) =>
-        set((state) => ({
+      toggleRecordingModal: (value?: boolean) =>
+        set((state: LyricState) => ({
           isRecordingModalVisible: value ?? !state.isRecordingModalVisible,
         })),
 
@@ -85,7 +101,7 @@ export const useLyricStore = create<LyricState>()(
       toastVisible: false,
       toastMessage: '',
       toastType: 'success',
-      showToast: (message, type = 'success') =>
+      showToast: (message: string, type: 'success' | 'error' | 'info' = 'success') =>
         set({
           toastVisible: true,
           toastMessage: message,
@@ -97,39 +113,55 @@ export const useLyricStore = create<LyricState>()(
           toastMessage: '',
         }),
 
+      // --- Performance Mode State ---
+      isPerformanceMode: false,
+      togglePerformanceMode: (value?: boolean) =>
+        set((state: LyricState) => ({
+          isPerformanceMode: value ?? !state.isPerformanceMode,
+        })),
+
       // --- Project Actions ---
-      createProject: (name) => {
+      createProject: (name: string) => {
         const id = crypto.randomUUID?.() || String(Date.now());
         const now = new Date().toISOString();
-        set((s) => ({
+        set((s: LyricState) => ({
           projects: [{ id, name, createdAt: now }, ...s.projects],
           sectionsByProject: { ...s.sectionsByProject, [id]: [] },
           recordingsByProject: { ...s.recordingsByProject, [id]: [] },
           currentProjectId: id,
         }));
       },
-      loadProject: (id) => set({ currentProjectId: id }),
-      deleteProject: (id) => set((s) => {
+      loadProject: (id: string) => set({ currentProjectId: id }),
+      deleteProject: (id: string) => set((s: LyricState) => {
         const { [id]: _, ...sectionsRest } = s.sectionsByProject;
         const { [id]: __, ...recordingsRest } = s.recordingsByProject;
         return {
-          projects: s.projects.filter(p => p.id !== id),
+          projects: s.projects.filter((p: Project) => p.id !== id),
           currentProjectId: s.currentProjectId === id ? null : s.currentProjectId,
           sectionsByProject: sectionsRest,
           recordingsByProject: recordingsRest,
         };
       }),
-      renameProject: (id, name) => set((s) => ({
-        projects: s.projects.map(p => p.id === id ? { ...p, name } : p),
+      renameProject: (id: string, name: string) => set((s: LyricState) => ({
+        projects: s.projects.map((p: Project) => p.id === id ? { ...p, name } : p),
       })),
+      saveCurrentProject: () => {
+        const s = get();
+        const currentProject = s.projects.find((p: Project) => p.id === s.currentProjectId);
+        if (currentProject) {
+          set((state: LyricState) => ({
+            projects: state.projects.map((p: Project) => p.id === currentProject.id ? { ...currentProject, createdAt: new Date().toISOString() } : p),
+          }));
+        }
+      },
 
       // --- Section Actions ---
-      addSection: (type) => {
+      addSection: (type: string) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         const next: Section = {
           id: crypto.randomUUID?.() || String(Date.now()),
-          type: type as any,
+          type,
           createdAt: new Date().toISOString(),
         };
         set({
@@ -139,29 +171,86 @@ export const useLyricStore = create<LyricState>()(
           },
         });
       },
-      updateSection: (id, content) => {
+      updateSection: (id: string, content: string) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).map(sec => sec.id === id ? { ...sec, content } : sec),
+            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, content } : sec),
           },
         });
       },
-      removeSection: (id) => {
+      updateSectionType: (id: string, type: string) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).filter(sec => sec.id !== id),
+            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, type } : sec),
           },
+        });
+      },
+      updateSectionCount: (id: string, count: number) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set({
+          sectionsByProject: {
+            ...s.sectionsByProject,
+            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, count } : sec),
+          },
+        });
+      },
+      removeSection: (id: string) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set({
+          sectionsByProject: {
+            ...s.sectionsByProject,
+            [pid]: (s.sectionsByProject[pid] || []).filter((sec: Section) => sec.id !== id),
+          },
+        });
+      },
+      reorderSections: (fromIndex: number, toIndex: number) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set((state: LyricState) => {
+          const sections = [...state.sectionsByProject[pid] || []];
+          const [movedSection] = sections.splice(fromIndex, 1);
+          sections.splice(toIndex, 0, movedSection);
+          return {
+            sectionsByProject: {
+              ...state.sectionsByProject,
+              [pid]: sections,
+            },
+          };
+        });
+      },
+      toggleStarSection: (id: string) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set((state: LyricState) => {
+          const sections = [...state.sectionsByProject[pid] || []];
+          const sectionIndex = sections.findIndex((sec: Section) => sec.id === id);
+          if (sectionIndex !== -1) {
+            const updatedSections = [...sections];
+            updatedSections[sectionIndex] = {
+              ...updatedSections[sectionIndex],
+              isStarred: !updatedSections[sectionIndex].isStarred,
+            };
+            return {
+              sectionsByProject: {
+                ...state.sectionsByProject,
+                [pid]: updatedSections,
+              },
+            };
+          }
+          return state;
         });
       },
 
       // --- Recording Actions ---
-      addRecording: (rec) => {
+      addRecording: (rec: Omit<Recording, 'id' | 'createdAt'>) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         const next: Recording = {
@@ -176,23 +265,23 @@ export const useLyricStore = create<LyricState>()(
           },
         });
       },
-      removeRecording: (id) => {
+      removeRecording: (id: string) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set({
           recordingsByProject: {
             ...s.recordingsByProject,
-            [pid]: (s.recordingsByProject[pid] || []).filter(r => r.id !== id),
+            [pid]: (s.recordingsByProject[pid] || []).filter((r: Recording) => r.id !== id),
           },
         });
       },
-      updateRecordingName: (id, name) => {
+      updateRecordingName: (id: string, name: string) => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set({
           recordingsByProject: {
             ...s.recordingsByProject,
-            [pid]: (s.recordingsByProject[pid] || []).map(r => r.id === id ? { ...r, name } : r),
+            [pid]: (s.recordingsByProject[pid] || []).map((r: Recording) => r.id === id ? { ...r, name } : r),
           },
         });
       },
@@ -208,6 +297,30 @@ export const useLyricStore = create<LyricState>()(
         const pid = s.currentProjectId ?? '__unassigned__';
         return s.recordingsByProject[pid] || [];
       },
+      getStarredSections: () => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        return s.sectionsByProject[pid]?.filter((sec: Section) => sec.isStarred) || [];
+      },
+      getSectionsForProject: (projectId: string) => {
+        return get().sectionsByProject[projectId] || [];
+      },
+
+             // --- Computed Properties ---
+       get sections() {
+         const s = get();
+         const pid = s.currentProjectId ?? '__unassigned__';
+         return s.sectionsByProject[pid] || [];
+       },
+       get currentProject() {
+         const s = get();
+         return s.projects.find((p: Project) => p.id === s.currentProjectId) || null;
+       },
+       get recordings() {
+         const s = get();
+         const pid = s.currentProjectId ?? '__unassigned__';
+         return s.recordingsByProject[pid] || [];
+       },
     }),
     {
       name: 'lyriq-storage',
@@ -219,7 +332,7 @@ export const useLyricStore = create<LyricState>()(
         recordingsByProject: state.recordingsByProject,
       }),
       // One-time migration for old flat arrays
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state: any) => {
         if (state) {
           if (state.sections && !state.sectionsByProject) {
             state.sectionsByProject = { '__unassigned__': state.sections };

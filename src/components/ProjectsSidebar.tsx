@@ -37,7 +37,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
     renameProject,
     recordings,
     getStarredSections,
-    sections,
+    getSectionsForProject,
   } = useLyricStore();
 
   React.useEffect(() => {
@@ -117,7 +117,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
   const starredSections = getStarredSections();
   const sortedProjects = React.useMemo(() => {
     return [...projects].sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }, [projects]);
 
@@ -245,11 +245,14 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                         {project.name}
                       </Text>
                       {/* Lyrics snippet */}
-                      {!!project.sections?.length && (
-                        <Text className="text-gray-500 text-xs mt-1" numberOfLines={1} style={{ marginLeft: 0 }}>
-                          {project.sections.map(s => s.content).join(' ').slice(0, 80)}
-                        </Text>
-                      )}
+                      {(() => {
+                        const projectSections = getSectionsForProject(project.id);
+                        return projectSections.length > 0 ? (
+                          <Text className="text-gray-500 text-xs mt-1" numberOfLines={1} style={{ marginLeft: 0 }}>
+                            {projectSections.map((s: any) => s.content || '').join(' ').slice(0, 80)}
+                          </Text>
+                        ) : null;
+                      })()}
                     </View>
                   </Pressable>
                 ))}

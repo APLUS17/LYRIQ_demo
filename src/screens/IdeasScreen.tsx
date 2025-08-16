@@ -124,6 +124,13 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const formatRemaining = (current: number, total: number) => {
+    const remain = Math.max(0, total - current);
+    const m = Math.floor(remain / 60);
+    const s = remain % 60;
+    return `-${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   const [ideas, setIdeas] = useState<IdeaCard[]>([
     {
       id: '1',
@@ -181,6 +188,126 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   
   const filteredIdeas = allIdeas.filter(idea => idea.type === (activeTab === 'lyrics' ? 'lyric' : activeTab.slice(0, -1)));
 
+  // 3. Add RecordingRow component
+  const RecordingRow = ({
+    r,
+    isSelected,
+    onSelect,
+    onEllipsis,
+    onSeek,
+    onSeekBy,
+    onToggle,
+    onDelete,
+    currentTime,
+    totalTime,
+    isPlaying,
+  }: {
+    r: { id: string; name: string; createdAt: any; duration?: number };
+    isSelected: boolean;
+    onSelect: () => void;
+    onEllipsis: () => void;
+    onSeek: (ratio: number) => void;
+    onSeekBy: (deltaSec: number) => void;
+    onToggle: () => void;
+    onDelete: () => void;
+    currentTime: number;
+    totalTime: number;
+    isPlaying: boolean;
+  }) => {
+    return (
+      <View>
+        {/* List row */}
+        <Pressable
+          onPress={onSelect}
+          className="flex-row items-center justify-between px-4"
+          style={{ height: 64, borderBottomWidth: 1, borderBottomColor: '#2C2C2E' }}
+        >
+          <View className="flex-1 pr-3">
+            <Text className="text-white" style={{ fontSize: 17, fontWeight: '600' }} numberOfLines={1}>
+              {r.name || 'New Recording'}
+            </Text>
+            <Text style={{ color: '#9DA3AF', fontSize: 13, marginTop: 2 }}>
+              {formatWhen(r.createdAt as any)}
+            </Text>
+          </View>
+
+          <Text style={{ color: '#9DA3AF', fontSize: 13, marginRight: 6 }}>
+            {formatClock(Math.floor(r.duration || 0))}
+          </Text>
+
+          <Pressable onPress={onEllipsis} className="w-8 h-8 rounded-full items-center justify-center">
+            <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
+          </Pressable>
+        </Pressable>
+
+        {/* Expanded player under the selected row */}
+        {isSelected && (
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: '#0C0C0C' }}>
+            {/* Scrubber */}
+            <Pressable
+              onPress={(e) => {
+                const w = (e.nativeEvent as any).source?.width ?? 1;
+                const x = (e.nativeEvent as any).locationX ?? 0;
+                onSeek(Math.max(0, Math.min(1, x / Math.max(1, w))));
+              }}
+              className="h-6 justify-center"
+            >
+              <View className="h-1 rounded-full" style={{ backgroundColor: '#2C2C2E' }}>
+                <View
+                  className="h-1 rounded-full"
+                  style={{
+                    width: `${totalTime ? (currentTime / totalTime) * 100 : 0}%`,
+                    backgroundColor: '#FFFFFF',
+                  }}
+                />
+              </View>
+              <View className="flex-row justify-between mt-4">
+                <Text style={{ color: '#9DA3AF', fontSize: 12 }}>{formatClock(currentTime)}</Text>
+                <Text style={{ color: '#9DA3AF', fontSize: 12 }}>{formatRemaining(currentTime, totalTime)}</Text>
+              </View>
+            </Pressable>
+
+            {/* Controls */}
+            <View className="flex-row items-center justify-between mt-10">
+              <Pressable
+                onPress={() => onSeekBy(-15)}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1E' }}
+                className="items-center justify-center"
+              >
+                <Ionicons name="play-back" size={18} color="#E5E7EB" />
+              </Pressable>
+
+              <Pressable
+                onPress={onToggle}
+                style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFFFFF' }}
+                className="items-center justify-center"
+              >
+                <Ionicons name={isPlaying ? 'pause' : 'play'} size={22} color="#111827" />
+              </Pressable>
+
+              <Pressable
+                onPress={() => onSeekBy(15)}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1E' }}
+                className="items-center justify-center"
+              >
+                <Ionicons name="play-forward" size={18} color="#E5E7EB" />
+              </Pressable>
+
+              <Pressable
+                onPress={onDelete}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1E' }}
+                className="items-center justify-center"
+              >
+                <Ionicons name="trash" size={18} color="#3B82F6" />
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // 4. Replace renderTakes
   const renderTakes = () => {
     const items = recordings
       .filter(r => r.uri && typeof r.uri === 'string' && r.uri.trim() !== '')
@@ -197,43 +324,47 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     }
 
     return (
-      <>
-        {/* Large Title */}
-        <Text className="text-white font-bold mb-4" style={{ fontSize: 34 }}>All Recordings</Text>
+      <View style={{ width: '100%' }}>
+        {/* Large iOS title */}
+        <Text className="text-white font-bold mb-2" style={{ fontSize: 34 }}>All Recordings</Text>
 
-        {/* Recording Rows */}
-        <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#111111" }}>
-          {items.map((r, idx) => (
-            <Pressable
+        <ScrollView style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#0B0B0B' }}>
+          {items.map((r) => (
+            <RecordingRow
               key={r.id}
-              onPress={() => setSelectedId(r.id)}
-              className={`flex-row items-center justify-between px-4 ${idx !== items.length - 1 ? "border-b border-gray-800" : ""}`}
-              style={{ height: 56 }}
-            >
-              <View className="flex-1 pr-3">
-                <Text className="text-white text-base font-medium" numberOfLines={1}>{r.name}</Text>
-                <Text className="text-gray-500 text-xs mt-1">{formatWhen(r.createdAt as any)}</Text>
-              </View>
-              <View className="flex-row items-center" style={{ gap: 10 }}>
-                <Text className="text-gray-400 text-sm">{formatClock(Math.floor(r.duration || 0))}</Text>
-                <Pressable onPress={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }} className="w-8 h-8 rounded-full items-center justify-center">
-                  <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
-                </Pressable>
-              </View>
-            </Pressable>
+              r={r}
+              isSelected={selectedId === r.id}
+              onSelect={() => setSelectedId(r.id)}
+              onEllipsis={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }}
+              onToggle={togglePlayPause}
+              onSeekBy={seekBy}
+              onDelete={() => removeRecording(r.id)}
+              onSeek={async (ratio) => {
+                if (!sound) return;
+                const st = await sound.getStatusAsync();
+                if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
+                  const nextMs = Math.floor(st.durationMillis * ratio);
+                  await sound.setPositionAsync(nextMs);
+                }
+              }}
+              currentTime={selectedId === r.id ? currentTime : 0}
+              totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
+              isPlaying={selectedId === r.id ? isPlaying : false}
+            />
           ))}
-        </View>
+        </ScrollView>
 
-        {/* Spacer for bottom dock */}
+        {/* Spacer so the red button doesn’t cover last row */}
         <View style={{ height: 120 }} />
-      </>
+      </View>
     );
   };
 
+  // 1. Update tabs
   const tabs = [
-    { key: 'lyrics', label: 'Lyrics', icon: 'musical-notes-outline' },
-    { key: 'verses', label: 'Verses', icon: 'list-outline' },
-    { key: 'takes', label: 'Takes', icon: 'mic-outline' },
+    { key: 'lyrics', label: 'LYRIQS', icon: 'document-outline' },
+    { key: 'verses', label: 'VERSES', icon: 'list-outline' },
+    { key: 'takes', label: 'MUMBLs', icon: 'mic-outline' },
   ];
 
   const openProjectFromIdea = (idea: IdeaCard) => {
@@ -319,9 +450,9 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       {/* Tab Navigation */}
       <View className="flex-row px-4 mb-8 justify-center">
         {[
-          { key: 'lyrics', label: 'Stickies', icon: 'document-outline' },
-          { key: 'verses', label: 'Reels', icon: 'bookmark-outline' },
-          { key: 'takes', label: 'Collections', icon: 'folder-outline' },
+          { key: 'lyrics', label: 'LYRIQS', icon: 'document-outline' },
+          { key: 'verses', label: 'VERSES', icon: 'list-outline' },
+          { key: 'takes', label: 'MUMBLs', icon: 'mic-outline' },
         ].map((tab) => (
           <Pressable
             key={tab.key}
@@ -407,51 +538,6 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         )}
         {activeTab === 'takes' && renderTakes()}
       </ScrollView>
-
-      {/* Bottom Player Dock (Takes only) */}
-      {activeTab === 'takes' && (
-        <View className="absolute left-0 right-0" style={{ bottom: Math.max(insets.bottom, 16) }}>
-          <View className="px-4">
-            {/* Scrubber */}
-            <Pressable
-              onPress={(e) => {
-                const width = 320; // approx
-                const x = (e.nativeEvent as any).locationX || 0;
-                const next = Math.max(0, Math.min(1, x / width));
-                const newSec = Math.floor((totalTime || 0) * next);
-                setCurrentTime(newSec);
-                setTimeout(() => seekBy(0), 0);
-              }}
-              className="h-6 justify-center"
-            >
-              <View className="h-1 rounded-full bg-gray-700 overflow-hidden">
-                <View style={{ width: `${Math.min(100, Math.max(0, (totalTime ? (currentTime / totalTime) : 0) * 100))}%` }} className="h-1 bg-emerald-500" />
-              </View>
-              <View className="flex-row justify-between mt-1">
-                <Text className="text-gray-400 text-xs">{formatClock(currentTime)}</Text>
-                <Text className="text-gray-400 text-xs">{formatClock(totalTime)}</Text>
-              </View>
-            </Pressable>
-
-            {/* Controls */}
-            <View className="flex-row items-center justify-between mt-3">
-              <Ionicons name="analytics-outline" size={20} color="#9CA3AF" />
-              <Pressable onPress={() => seekBy(-15)} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
-                <Ionicons name="play-back" size={18} color="#E5E7EB" />
-              </Pressable>
-              <Pressable onPress={togglePlayPause} className="w-14 h-14 rounded-full bg-white items-center justify-center">
-                <Ionicons name={isPlaying ? 'pause' : 'play'} size={22} color="#111827" />
-              </Pressable>
-              <Pressable onPress={() => seekBy(15)} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
-                <Ionicons name="play-forward" size={18} color="#E5E7EB" />
-              </Pressable>
-              <Pressable onPress={() => { if (selectedRecording) removeRecording(selectedRecording.id); }} className="w-11 h-11 rounded-full bg-gray-800 items-center justify-center">
-                <Ionicons name="trash" size={18} color="#3B82F6" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      )}
 
       {/* Actions Sheet */}
       <Modal visible={actionsId != null} transparent animationType="fade" onRequestClose={() => setActionsId(null)}>

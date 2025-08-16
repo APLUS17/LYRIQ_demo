@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLyricStore } from '../state/lyricStore';
+import type { Section, Recording } from '../state/lyricStore';
 import { Audio } from 'expo-av';
 
 interface IdeaCard {
@@ -28,9 +29,13 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [editingIdea, setEditingIdea] = useState<IdeaCard | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
-  
-  // Get recordings from the store
-  const { recordings, sections, removeRecording, updateRecordingName } = useLyricStore();
+
+  // Use project-scoped selectors
+  const recordings = useLyricStore(s => s.getRecordings ? s.getRecordings() : []);
+  const sections   = useLyricStore(s => s.getSections ? s.getSections() : []);
+  const removeRecording = useLyricStore(s => s.removeRecording);
+  const updateRecordingName = useLyricStore(s => s.updateRecordingName);
+
   const storeRef = useRef(useLyricStore.getState());
   useEffect(() => useLyricStore.subscribe((s) => (storeRef.current = s)), []);
 
@@ -165,7 +170,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   ]);
 
   // Convert recordings to idea format for takes tab
-  const recordingIdeas: IdeaCard[] = recordings.map(recording => ({
+  const recordingIdeas: IdeaCard[] = recordings.map((recording: Recording) => ({
     id: recording.id,
     title: recording.name,
     content: `Duration: ${Math.floor((recording.duration || 0) / 60)}m\nRecorded: ${new Date(recording.createdAt).toLocaleDateString()}`,
@@ -175,8 +180,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
 
   // Convert sections to idea format for verses tab  
   const verseIdeas: IdeaCard[] = sections
-    .filter(section => section.isStarred)
-    .map(section => ({
+    .filter((section: Section) => section.isStarred)
+    .map((section: Section) => ({
       id: section.id,
       title: section.title || `${section.type} Section`,
       content: section.content || 'Empty section',
@@ -375,9 +380,10 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       loadProject(existing.id);
     } else {
       createProject(idea.title);
-      const newProject = useLyricStore.getState().currentProject;
-      if (newProject) {
-        loadProject(newProject.id);
+      // After creation, just load the most recent project
+      const newProjects = useLyricStore.getState().projects;
+      if (newProjects.length > 0) {
+        loadProject(newProjects[0].id);
       }
     }
     onBack();
@@ -419,7 +425,6 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           onPress: () => {
             if (ideaType === 'take') {
               // Delete recording from store
-              const { removeRecording } = useLyricStore.getState();
               removeRecording(ideaId);
             } else if (ideaType === 'verse') {
               // Delete section from store
@@ -433,6 +438,21 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         },
       ]
     );
+  };
+
+  // --- FAB handlers ---
+  const handleFabRecord = () => {
+    const s = useLyricStore.getState();
+    if (!s.currentProjectId) s.createProject?.('Untitled');
+    s.toggleRecordingModal?.(true);
+  };
+  const handleFabNewVerse   = () => useLyricStore.getState().addSection?.('verse');
+  const handleFabConvert    = () => {/* No-op: saveCurrentProject is not in project-scoped API */};
+  const handleFabNewProject = () => {
+    const s = useLyricStore.getState();
+    const name = 'Untitled ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    s.createProject?.(name);
+    // optionally route to editor here
   };
 
   return (

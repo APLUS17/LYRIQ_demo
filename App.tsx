@@ -245,7 +245,6 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
-  const [showReloadConfirm, setShowReloadConfirm] = useState(false);
   
   const { 
     sections, 
@@ -261,13 +260,7 @@ function MainScreen() {
     saveCurrentProject,
     toggleStarSection,
     currentProject,
-    renameProject,
-    loadProject,
-    hasUnsavedChanges,
-    toastVisible,
-    toastMessage,
-    toastType,
-    hideToast,
+    renameProject
   } = useLyricStore();
 
   // Title editing state
@@ -381,20 +374,8 @@ function MainScreen() {
              <Text className="text-white font-medium ml-2 text-sm">save</Text>
            </Pressable>
 
-           {/* Reload Button */}
-           <Pressable
-             onPress={() => {
-               if (!currentProject) return;
-               if (hasUnsavedChanges()) { setShowReloadConfirm(true); return; }
-               loadProject(currentProject.id);
-             }}
-             className="p-2"
-             accessibilityLabel="Reload project"
-           >
-             <Ionicons name="refresh" size={22} color="#9CA3AF" />
-           </Pressable>
-           
-           {/* Performance View Toggle */}
+            {/* Performance View Toggle */}
+
            <Pressable
              onPress={() => togglePerformanceMode(true)}
              className="p-2"
@@ -484,27 +465,6 @@ function MainScreen() {
          </View>
        )}
 
-       {/* Global Toast */}
-       <Toast visible={toastVisible} message={toastMessage} type={toastType} onHide={hideToast} />
-
-       {/* Reload Confirm */}
-       <Modal visible={showReloadConfirm} transparent animationType="fade" onRequestClose={() => setShowReloadConfirm(false)}>
-         <View className="flex-1 justify-center bg-black/50 p-6">
-           <View className="bg-gray-800 rounded-2xl p-6">
-             <Text className="text-white text-lg font-semibold mb-4">Discard unsaved edits?</Text>
-             <Text className="text-gray-300 mb-6">This will reload the last saved version of this project.</Text>
-             <View className="flex-row gap-3">
-               <Pressable onPress={() => setShowReloadConfirm(false)} className="flex-1 bg-gray-600 p-4 rounded-xl">
-                 <Text className="text-white text-center">Cancel</Text>
-               </Pressable>
-               <Pressable onPress={() => { if (currentProject) loadProject(currentProject.id); setShowReloadConfirm(false); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
-                 <Text className="text-white text-center">Reload</Text>
-               </Pressable>
-             </View>
-           </View>
-         </View>
-       </Modal>
-       
        {/* Projects Sidebar */}
 
       <ProjectsSidebar

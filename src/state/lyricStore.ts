@@ -56,7 +56,6 @@ interface LyricState {
   loadProject: (projectId: string) => void;
   deleteProject: (projectId: string) => void;
   renameProject: (projectId: string, name: string) => void;
-  hasUnsavedChanges: () => boolean;
   
   // Current Session (working sections)
   sections: LyricSection[];
@@ -219,16 +218,7 @@ export const useLyricStore = create<LyricState>()(
         };
       }),
 
-      hasUnsavedChanges: () => {
-        const state = get();
-        const cp = state.currentProject;
-        if (!cp) return false;
-        const normalizeSections = (arr: LyricSection[]) => arr.map(s => ({ id: s.id, type: s.type, title: s.title, content: s.content, count: s.count, isStarred: s.isStarred, collapsed: !!s.collapsed }));
-        const normalizeRecs = (arr: Recording[]) => arr.map(r => ({ id: r.id, name: r.name, uri: r.uri, duration: r.duration, projectId: r.projectId }));
-        const a = JSON.stringify({ s: normalizeSections(state.sections), r: normalizeRecs(state.recordings) });
-        const b = JSON.stringify({ s: normalizeSections(cp.sections), r: normalizeRecs(cp.recordings) });
-        return a !== b;
-      },
+      
 
       // Current Session Sections
       sections: [],

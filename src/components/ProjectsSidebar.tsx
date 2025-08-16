@@ -21,7 +21,6 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showReloadConfirm, setShowReloadConfirm] = useState(false);
   
   const translateX = useSharedValue(-100);
   const opacity = useSharedValue(0);
@@ -36,8 +35,6 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
     recordings,
     getStarredSections,
     sections,
-    showToast,
-    hasUnsavedChanges,
   } = useLyricStore();
 
   React.useEffect(() => {
@@ -134,22 +131,9 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
               sidebarStyle,
             ]}
           >
-            {/* Header with LYRIQ branding + Reload */}
-            <View className="px-4 py-6 border-b border-gray-800 flex-row items-center justify-between">
+            {/* Header with LYRIQ branding */}
+            <View className="px-4 py-6 border-b border-gray-800">
               <Text className="text-white text-xl font-bold tracking-wide">LYRIQ</Text>
-              <Pressable
-                accessibilityLabel="Reload current project"
-                onPress={() => {
-                  if (!currentProject) { showToast("No project to reload", "info"); return; }
-                  if (hasUnsavedChanges()) { setShowReloadConfirm(true); return; }
-                  loadProject(currentProject.id);
-                  showToast(`Reloaded "${currentProject.name}"`, "success");
-                  onClose();
-                }}
-                className="w-9 h-9 rounded-lg bg-gray-800 items-center justify-center"
-              >
-                <Ionicons name="refresh" size={16} color="#9CA3AF" />
-              </Pressable>
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -266,25 +250,8 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
         </View>
       </Modal>
 
-      {/* Reload Confirm Modal */}
-      <Modal visible={showReloadConfirm} transparent animationType="fade" onRequestClose={() => setShowReloadConfirm(false)}>
-        <View className="flex-1 justify-center bg-black/50 p-6">
-          <View className="bg-gray-800 rounded-2xl p-6">
-            <Text className="text-white text-lg font-semibold mb-4">Discard unsaved edits?</Text>
-            <Text className="text-gray-300 mb-6">This will reload the last saved version of this project.</Text>
-            <View className="flex-row gap-3">
-              <Pressable onPress={() => setShowReloadConfirm(false)} className="flex-1 bg-gray-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Cancel</Text>
-              </Pressable>
-              <Pressable onPress={() => { if (currentProject) { loadProject(currentProject.id); showToast(`Reloaded "${currentProject.name}"`, "success"); } setShowReloadConfirm(false); onClose(); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Reload</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
        {/* New Project Modal */}
+
        <Modal
 
         visible={showNewProjectModal}

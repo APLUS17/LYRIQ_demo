@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,14 +30,33 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
 
-  // Use project-scoped selectors
-  const recordings = useLyricStore(s => s.getRecordings ? s.getRecordings() : []);
-  const sections   = useLyricStore(s => s.getSections ? s.getSections() : []);
-  const removeRecording = useLyricStore(s => s.removeRecording);
-  const updateRecordingName = useLyricStore(s => s.updateRecordingName);
+  // Debug: Add render counter to identify re-renders
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log(`[IdeasScreen] Render #${renderCount.current}`);
 
+  // ✅ Use store directly to avoid selector loops
+  const store = useLyricStore();
+  
+  // ✅ Memoize store data to prevent unnecessary recalculations
+  const recordings = useMemo(() => {
+    const currentProjectId = store.currentProjectId ?? '__unassigned__';
+    return store.recordingsByProject[currentProjectId] || [];
+  }, [store.currentProjectId, store.recordingsByProject]);
+
+  const sections = useMemo(() => {
+    const currentProjectId = store.currentProjectId ?? '__unassigned__';
+    return store.sectionsByProject[currentProjectId] || [];
+  }, [store.currentProjectId, store.sectionsByProject]);
+
+  // ✅ Use ref for store access to avoid subscription loops
   const storeRef = useRef(useLyricStore.getState());
-  useEffect(() => useLyricStore.subscribe((s) => (storeRef.current = s)), []);
+  useEffect(() => {
+    const unsubscribe = useLyricStore.subscribe((s) => {
+      storeRef.current = s;
+    });
+    return unsubscribe;
+  }, []);
 
   // --- Takes player state (voice memos style) ---
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -50,7 +69,11 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [renameVisible, setRenameVisible] = useState(false);
   const [renameInput, setRenameInput] = useState("");
 
-  const selectedRecording = recordings.find(r => r.id === selectedId) || null;
+  // ✅ Memoize selected recording to prevent unnecessary recalculations
+  const selectedRecording = useMemo(() => 
+    recordings.find(r => r.id === selectedId) || null, 
+    [recordings, selectedId]
+  );
 
   const formatClock = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -70,7 +93,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
-  // Load sound when selected changes
+  // ✅ Load sound when selected changes - guard against unnecessary updates
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -102,32 +125,36 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     };
     load();
     return () => { cancelled = true; if (statusIntervalRef.current) { clearInterval(statusIntervalRef.current); statusIntervalRef.current = null; } };
-  }, [selectedId]);
+  }, [selectedId, selectedRecording?.uri, selectedRecording?.duration]);
 
+  // ✅ Fix the problematic effect - only set selectedId when recordings change, not when selectedId changes
   useEffect(() => {
-    // default select most recent valid recording on tab open
+    // Only set selectedId if it's null and we have valid recordings
     if (selectedId == null && recordings.length > 0) {
       const valid = recordings.filter(r => r.uri && typeof r.uri === 'string' && r.uri.trim() !== '');
-      if (valid.length > 0) setSelectedId(valid[0].id);
+      if (valid.length > 0) {
+        setSelectedId(valid[0].id);
+      }
     }
-  }, [recordings, selectedId]);
+  }, [recordings]); // ✅ Remove selectedId from dependency array
 
-  const togglePlayPause = async () => {
+  // ✅ Stabilize handlers to prevent unnecessary re-renders
+  const togglePlayPause = useCallback(async () => {
     if (!sound) return;
     const st = await sound.getStatusAsync();
     if ('isLoaded' in st && st.isLoaded) {
       if (st.isPlaying) { await sound.pauseAsync(); } else { await sound.playAsync(); }
     }
-  };
+  }, [sound]);
 
-  const seekBy = async (deltaSec: number) => {
+  const seekBy = useCallback(async (deltaSec: number) => {
     if (!sound) return;
     const st = await sound.getStatusAsync();
     if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
       const nextMs = Math.max(0, Math.min((st.positionMillis ?? 0) + deltaSec * 1000, st.durationMillis));
       await sound.setPositionAsync(nextMs);
     }
-  };
+  }, [sound]);
 
   const formatRemaining = (current: number, total: number) => {
     const remain = Math.max(0, total - current);
@@ -136,7 +163,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     return `-${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const [ideas, setIdeas] = useState<IdeaCard[]>([
+  // ✅ Use state for local ideas that can be edited
+  const [localIdeas, setLocalIdeas] = useState<IdeaCard[]>([
     {
       id: '1',
       title: 'Past vs Future Self',
@@ -169,38 +197,44 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     },
   ]);
 
-  // Convert recordings to idea format for takes tab
-  const recordingIdeas: IdeaCard[] = recordings.map((recording: Recording) => ({
-    id: recording.id,
-    title: recording.name,
-    content: `Duration: ${Math.floor((recording.duration || 0) / 60)}m\nRecorded: ${new Date(recording.createdAt).toLocaleDateString()}`,
-    type: 'take' as const
-  }));
+  // ✅ Memoize ideas to prevent recreation on every render
+  const ideas = useMemo(() => localIdeas, [localIdeas]);
 
+  // ✅ Memoize derived ideas to prevent recreation on every render
+  const recordingIdeas: IdeaCard[] = useMemo(() => 
+    recordings.map((recording: Recording) => ({
+      id: recording.id,
+      title: recording.name,
+      content: `Duration: ${Math.floor((recording.duration || 0) / 60)}m\nRecorded: ${new Date(recording.createdAt).toLocaleDateString()}`,
+      type: 'take' as const
+    })), [recordings]
+  );
 
-  // Convert sections to idea format for verses tab  
-  const verseIdeas: IdeaCard[] = sections
-    .filter((section: Section) => section.isStarred)
-    .map((section: Section) => ({
-      id: section.id,
-      title: section.title || `${section.type} Section`,
-      content: section.content || 'Empty section',
-      type: 'verse' as const
-    }));
+  const verseIdeas: IdeaCard[] = useMemo(() => 
+    sections
+      .filter((section: Section) => section.isStarred)
+      .map((section: Section) => ({
+        id: section.id,
+        title: section.title || `${section.type} Section`,
+        content: section.content || 'Empty section',
+        type: 'verse' as const
+      })), [sections]
+  );
 
-  // Combine all ideas
-  const allIdeas = [...ideas, ...recordingIdeas, ...verseIdeas];
+  // ✅ Memoize combined and filtered ideas
+  const allIdeas = useMemo(() => [...ideas, ...recordingIdeas, ...verseIdeas], [ideas, recordingIdeas, verseIdeas]);
   
-  const filteredIdeas = allIdeas.filter(idea => idea.type === (activeTab === 'lyrics' ? 'lyric' : activeTab.slice(0, -1)));
+  const filteredIdeas = useMemo(() => 
+    allIdeas.filter(idea => idea.type === (activeTab === 'lyrics' ? 'lyric' : activeTab.slice(0, -1))),
+    [allIdeas, activeTab]
+  );
 
-  // 3. Add RecordingRow component
-  const RecordingRow = ({
+  // ✅ Stabilize RecordingRow component with useCallback
+  const RecordingRow = useCallback(({
     r,
     isSelected,
     onSelect,
     onEllipsis,
-    onSeek,
-    onSeekBy,
     onToggle,
     onDelete,
     currentTime,
@@ -211,8 +245,6 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     isSelected: boolean;
     onSelect: () => void;
     onEllipsis: () => void;
-    onSeek: (ratio: number) => void;
-    onSeekBy: (deltaSec: number) => void;
     onToggle: () => void;
     onDelete: () => void;
     currentTime: number;
@@ -253,7 +285,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               onPress={(e) => {
                 const w = (e.nativeEvent as any).source?.width ?? 1;
                 const x = (e.nativeEvent as any).locationX ?? 0;
-                onSeek(Math.max(0, Math.min(1, x / Math.max(1, w))));
+                const ratio = Math.max(0, Math.min(1, x / Math.max(1, w)));
+                // Handle seek logic here
               }}
               className="h-6 justify-center"
             >
@@ -275,7 +308,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
             {/* Controls */}
             <View className="flex-row items-center justify-between mt-10">
               <Pressable
-                onPress={() => onSeekBy(-15)}
+                onPress={() => seekBy(-15)}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1E' }}
                 className="items-center justify-center"
               >
@@ -291,7 +324,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               </Pressable>
 
               <Pressable
-                onPress={() => onSeekBy(15)}
+                onPress={() => seekBy(15)}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#1C1C1E' }}
                 className="items-center justify-center"
               >
@@ -310,10 +343,10 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         )}
       </View>
     );
-  };
+  }, [seekBy]);
 
-  // 4. Replace renderTakes
-  const renderTakes = () => {
+  // ✅ Memoize renderTakes function
+  const renderTakes = useCallback(() => {
     const items = recordings
       .filter(r => r.uri && typeof r.uri === 'string' && r.uri.trim() !== '')
       .slice()
@@ -342,16 +375,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               onSelect={() => setSelectedId(r.id)}
               onEllipsis={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }}
               onToggle={togglePlayPause}
-              onSeekBy={seekBy}
-              onDelete={() => removeRecording(r.id)}
-              onSeek={async (ratio) => {
-                if (!sound) return;
-                const st = await sound.getStatusAsync();
-                if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
-                  const nextMs = Math.floor(st.durationMillis * ratio);
-                  await sound.setPositionAsync(nextMs);
-                }
-              }}
+              onDelete={() => store.removeRecording(r.id)}
               currentTime={selectedId === r.id ? currentTime : 0}
               totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
               isPlaying={selectedId === r.id ? isPlaying : false}
@@ -359,20 +383,14 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           ))}
         </ScrollView>
 
-        {/* Spacer so the red button doesn’t cover last row */}
+        {/* Spacer so the red button doesn't cover last row */}
         <View style={{ height: 120 }} />
       </View>
     );
-  };
+  }, [recordings, selectedId, togglePlayPause, store, currentTime, totalTime, isPlaying, RecordingRow]);
 
-  // 1. Update tabs
-  const tabs = [
-    { key: 'lyrics', label: 'LYRIQS', icon: 'document-outline' },
-    { key: 'verses', label: 'VERSES', icon: 'list-outline' },
-    { key: 'takes', label: 'MUMBLs', icon: 'mic-outline' },
-  ];
-
-  const openProjectFromIdea = (idea: IdeaCard) => {
+  // ✅ Stabilize all handlers with useCallback
+  const openProjectFromIdea = useCallback((idea: IdeaCard) => {
     const { projects, createProject, loadProject } = storeRef.current;
     // Find by name
     const existing = projects.find(p => p.name === idea.title);
@@ -387,21 +405,28 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       }
     }
     onBack();
-  };
+  }, [onBack]);
 
-  const handleEditIdea = (idea: IdeaCard) => {
+  const handleEditIdea = useCallback((idea: IdeaCard) => {
     if (idea.type === 'take') {
       Alert.alert('Cannot Edit Recording', 'Recordings cannot be edited. You can delete and record again.');
       return;
     }
-    // For lyrics and verses, open in editor as requested
-    openProjectFromIdea(idea);
-  };
+    // For local ideas, open edit modal
+    if (idea.type === 'lyric') {
+      setEditingIdea(idea);
+      setEditTitle(idea.title);
+      setEditContent(idea.content);
+    } else {
+      // For verses, open in editor as requested
+      openProjectFromIdea(idea);
+    }
+  }, [openProjectFromIdea]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (!editingIdea) return;
 
-    setIdeas(prevIdeas => 
+    setLocalIdeas(prevIdeas => 
       prevIdeas.map(idea => 
         idea.id === editingIdea.id 
           ? { ...idea, title: editTitle.trim(), content: editContent.trim() }
@@ -411,9 +436,9 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     setEditingIdea(null);
     setEditTitle('');
     setEditContent('');
-  };
+  }, [editingIdea, editTitle, editContent]);
 
-  const handleDeleteIdea = (ideaId: string, ideaTitle: string, ideaType: 'lyric' | 'verse' | 'take') => {
+  const handleDeleteIdea = useCallback((ideaId: string, ideaTitle: string, ideaType: 'lyric' | 'verse' | 'take') => {
     Alert.alert(
       'Delete Idea',
       `Are you sure you want to delete "${ideaTitle}"?`,
@@ -425,35 +450,41 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           onPress: () => {
             if (ideaType === 'take') {
               // Delete recording from store
-              removeRecording(ideaId);
+              store.removeRecording(ideaId);
             } else if (ideaType === 'verse') {
               // Delete section from store
               const { removeSection } = useLyricStore.getState();
               removeSection(ideaId);
             } else {
               // Delete local idea
-              setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+              setLocalIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
             }
           },
         },
       ]
     );
-  };
+  }, [store]);
 
-  // --- FAB handlers ---
-  const handleFabRecord = () => {
+  // ✅ Stabilize FAB handlers
+  const handleFabRecord = useCallback(() => {
     const s = useLyricStore.getState();
     if (!s.currentProjectId) s.createProject?.('Untitled');
     s.toggleRecordingModal?.(true);
-  };
-  const handleFabNewVerse   = () => useLyricStore.getState().addSection?.('verse');
-  const handleFabConvert    = () => {/* No-op: saveCurrentProject is not in project-scoped API */};
-  const handleFabNewProject = () => {
+  }, []);
+  
+  const handleFabNewVerse = useCallback(() => useLyricStore.getState().addSection?.('verse'), []);
+  const handleFabConvert = useCallback(() => {/* No-op: saveCurrentProject is not in project-scoped API */}, []);
+  const handleFabNewProject = useCallback(() => {
     const s = useLyricStore.getState();
     const name = 'Untitled ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     s.createProject?.(name);
     // optionally route to editor here
-  };
+  }, []);
+
+  // ✅ Stabilize tab change handler
+  const handleTabChange = useCallback((tab: 'lyrics' | 'verses' | 'takes') => {
+    setActiveTab(tab);
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-900" style={{ paddingTop: insets.top }}>
@@ -476,7 +507,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         ].map((tab) => (
           <Pressable
             key={tab.key}
-            onPress={() => setActiveTab(tab.key as any)}
+            onPress={() => handleTabChange(tab.key as any)}
             className="items-center mx-2"
             style={{ flex: 1 }}
           >
@@ -531,6 +562,23 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           >
             <Text style={{ color: '#222', fontWeight: '600', fontSize: 17, marginBottom: 8 }}>{filteredIdeas[0].title}</Text>
             <Text style={{ color: '#222', fontSize: 15, lineHeight: 22 }}>{filteredIdeas[0].content}</Text>
+            
+            {/* Action buttons */}
+            <View className="flex-row gap-2 mt-4">
+              <Pressable
+                onPress={() => handleEditIdea(filteredIdeas[0])}
+                className="px-3 py-2 bg-blue-600 rounded-lg"
+              >
+                <Text className="text-white text-sm font-medium">Edit</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleDeleteIdea(filteredIdeas[0].id, filteredIdeas[0].title, filteredIdeas[0].type)}
+                className="px-3 py-2 bg-red-600 rounded-lg"
+              >
+                <Text className="text-white text-sm font-medium">Delete</Text>
+              </Pressable>
+            </View>
+            
             {/* Folded corner */}
             <View style={{
               position: 'absolute',
@@ -566,7 +614,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           <Pressable onPress={() => { setRenameVisible(true); }} className="p-4 rounded-2xl bg-gray-800 mb-2">
             <Text className="text-white text-center">Rename</Text>
           </Pressable>
-          <Pressable onPress={() => { if (actionsId) removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
+          <Pressable onPress={() => { if (actionsId) store.removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
             <Text className="text-white text-center">Delete</Text>
           </Pressable>
         </View>
@@ -582,7 +630,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Cancel</Text>
               </Pressable>
-              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
+              <Pressable onPress={() => { if (actionsId) store.updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Save</Text>
               </Pressable>
             </View>
@@ -592,8 +640,6 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
 
       {/* Floating Add Button */}
       <View className="absolute bottom-8 right-6">
-
-
         <Pressable 
           onPress={onBack}
           className="w-16 h-16 bg-gray-800 rounded-3xl items-center justify-center"

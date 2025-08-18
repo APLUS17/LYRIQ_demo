@@ -145,7 +145,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         >
           <Ionicons name="menu" size={12} color="#9CA3AF" />
            <Text className="ml-2 text-sm font-medium text-gray-200">
-             {(section.title && section.title.length > 0) ? section.title : (section.type?.charAt(0).toUpperCase() + section.type?.slice(1))}
+             {(section.title && section.title.length > 0) ? section.title : (section.type?.charAt(0).toUpperCase() + section.type?.slice(1) || 'Section')}
            </Text>
           <Ionicons name="chevron-down" size={12} color="#9CA3AF" className="ml-1" />
         </Pressable>

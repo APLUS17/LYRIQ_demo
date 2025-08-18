@@ -163,18 +163,33 @@ export const useLyricStore = create<LyricState>()(
       // --- Section Actions ---
       addSection: (type: string) => {
         const s = get();
-        const pid = s.currentProjectId ?? '__unassigned__';
+        let pid = s.currentProjectId;
+        
+        // If no current project, create one first
+        if (!pid) {
+          const newProjectId = crypto.randomUUID?.() || String(Date.now());
+          const now = new Date().toISOString();
+          set((state: LyricState) => ({
+            projects: [{ id: newProjectId, name: 'Untitled', createdAt: now }, ...state.projects],
+            currentProjectId: newProjectId,
+            sectionsByProject: { ...state.sectionsByProject, [newProjectId]: [] },
+            recordingsByProject: { ...state.recordingsByProject, [newProjectId]: [] },
+          }));
+          pid = newProjectId;
+        }
+        
         const next: Section = {
           id: crypto.randomUUID?.() || String(Date.now()),
           type,
           createdAt: new Date().toISOString(),
         };
-        set({
+        
+        set((state: LyricState) => ({
           sectionsByProject: {
-            ...s.sectionsByProject,
-            [pid]: [...(s.sectionsByProject[pid] || []), next],
+            ...state.sectionsByProject,
+            [pid!]: [...(state.sectionsByProject[pid!] || []), next],
           },
-        });
+        }));
       },
       updateSection: (id: string, content: string) => {
         const s = get();

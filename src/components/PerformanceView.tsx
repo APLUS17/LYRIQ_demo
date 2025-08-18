@@ -412,9 +412,9 @@ export default function PerformanceView() {
             <Text 
               className="text-emerald-300 font-bold text-base tracking-wide uppercase"
               style={{ fontFamily: 'System' }}
-            >
-              {section.title || 'Untitled'}
-            </Text>
+             >
+               {section.title || (section.type?.charAt(0).toUpperCase() + section.type?.slice(1)) || 'Untitled'}
+             </Text>
           </View>
           
           {/* Section Content */}

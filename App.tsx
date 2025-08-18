@@ -391,8 +391,8 @@ function MainScreen() {
         </View>
       </View>
 
-      {/* Sections Container with Swipe-Up Gesture */}
-       <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]} minDist={40}>
+       {/* Sections Container with Swipe-Up Gesture */}
+       <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]}>
         <Animated.View className="flex-1">
           <ScrollView 
             ref={scrollRef}

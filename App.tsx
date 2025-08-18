@@ -28,12 +28,13 @@ import IdeasScreen from './src/screens/IdeasScreen';
 // Enhanced Section Card Component with Swipe-to-Delete
 const AnimatedView = Animated.createAnimatedComponent(View);
 
-function SectionCard({ section, updateSection, updateSectionType, removeSection, toggleStarSection }: {
+function SectionCard({ section, updateSection, updateSectionType, removeSection, toggleStarSection, inputRef }: {
   section: any;
   updateSection: (id: string, content: string) => void;
   updateSectionType: (id: string, type: string) => void;
   removeSection: (id: string) => void;
   toggleStarSection: (id: string) => void;
+  inputRef?: React.RefObject<TextInput | null>;
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const translateX = useSharedValue(0);
@@ -207,6 +208,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
 
       {/* Lyrics Text Area */}
       <TextInput
+        ref={inputRef}
         multiline
         placeholder={`Write your ${section.type} here...`}
         value={section.content}
@@ -245,28 +247,33 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [showAddToast, setShowAddToast] = useState(false);
   
-  const { 
-    sections, 
-    addSection, 
-    updateSection, 
-    updateSectionType, 
-    updateSectionCount, 
-    removeSection, 
-    reorderSections,
-    toggleRecordingModal,
-    isPerformanceMode,
-    togglePerformanceMode,
-    saveCurrentProject,
-    toggleStarSection,
-    currentProject,
-    renameProject,
-  } = useLyricStore();
+  const sections = useLyricStore(s => s.getSections());
+  const addSection = useLyricStore(s => s.addSection);
+  const updateSection = useLyricStore(s => s.updateSection);
+  const updateSectionType = useLyricStore(s => s.updateSectionType);
+  const removeSection = useLyricStore(s => s.removeSection);
+  const toggleRecordingModal = useLyricStore(s => s.toggleRecordingModal);
+  const isPerformanceMode = useLyricStore(s => s.isPerformanceMode);
+  const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
+  const saveCurrentProject = useLyricStore(s => s.saveCurrentProject);
+  const toggleStarSection = useLyricStore(s => s.toggleStarSection);
+  const currentProject = useLyricStore(s => s.currentProject); 
+  const renameProject = useLyricStore(s => s.renameProject);
 
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const lastTitleTapRef = useRef<number>(0);
+
+  // Scroll and input refs for focusing on add
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, React.RefObject<TextInput | null>>>({});
+  const getInputRef = useCallback((id: string) => {
+    if (!inputRefs.current[id]) inputRefs.current[id] = React.createRef<TextInput | null>();
+    return inputRefs.current[id];
+  }, []);
 
   const displayedTitle = currentProject?.name || "Untitled";
 
@@ -385,9 +392,10 @@ function MainScreen() {
       </View>
 
       {/* Sections Container with Swipe-Up Gesture */}
-      <PanGestureHandler onGestureEvent={swipeUpGestureHandler}>
+       <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]} minDist={40}>
         <Animated.View className="flex-1">
           <ScrollView 
+            ref={scrollRef}
             className="flex-1 px-6" 
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 60 }}
@@ -401,11 +409,22 @@ function MainScreen() {
                 updateSectionType={updateSectionType}
                 removeSection={removeSection}
                 toggleStarSection={toggleStarSection}
+                inputRef={getInputRef(section.id)}
               />
             ))}
 
             {/* Add Section Button */}
-            <AddSectionButton onPress={() => addSection('verse')} />
+            <AddSectionButton onPress={() => {
+              const id = addSection("verse");
+              requestAnimationFrame(() => {
+                scrollRef.current?.scrollToEnd({ animated: true });
+                setTimeout(() => {
+                  inputRefs.current[id]?.current?.focus?.();
+                }, 250);
+              });
+              setShowAddToast(true);
+              setTimeout(() => setShowAddToast(false), 1200);
+            }} />
 
             {sections.length === 0 && (
               <View className="items-center py-12">
@@ -453,6 +472,22 @@ function MainScreen() {
            }}
          >
            <Text className="text-white font-medium">Project saved!</Text>
+         </View>
+       )}
+
+       {/* Add Toast */}
+       {showAddToast && (
+         <View 
+           className="absolute top-36 left-1/2 transform -translate-x-1/2 bg-gray-700 px-4 py-2 rounded-lg z-50"
+           style={{
+             shadowColor: '#000',
+             shadowOffset: { width: 0, height: 2 },
+             shadowOpacity: 0.3,
+             shadowRadius: 4,
+             elevation: 8,
+           }}
+         >
+           <Text className="text-white font-medium">Section added</Text>
          </View>
        )}
 

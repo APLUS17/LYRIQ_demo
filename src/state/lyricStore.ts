@@ -57,7 +57,7 @@ interface LyricState {
   saveCurrentProject: () => void;
 
   // Section Actions (project-scoped)
-  addSection: (type: string) => void;
+  addSection: (type: string) => string;
   updateSection: (id: string, content: string) => void;
   updateSectionType: (id: string, type: string) => void;
   updateSectionCount: (id: string, count: number) => void;
@@ -190,6 +190,9 @@ export const useLyricStore = create<LyricState>()(
             [pid!]: [...(state.sectionsByProject[pid!] || []), next],
           },
         }));
+        
+        // Return id for focusing
+        return next.id;
       },
       updateSection: (id: string, content: string) => {
         const s = get();

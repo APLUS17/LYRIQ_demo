@@ -22,6 +22,7 @@ import RecordingModal from './src/components/RecordingModal';
 import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
 import IdeasScreen from './src/screens/IdeasScreen';
+import TakesScreen from './src/screens/TakesScreen';
 
 
 
@@ -246,6 +247,7 @@ function MainScreen() {
   const insets = useSafeAreaInsets();
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
+  const [showTakesScreen, setShowTakesScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showAddToast, setShowAddToast] = useState(false);
   
@@ -497,12 +499,20 @@ function MainScreen() {
         visible={showProjectsSidebar}
         onClose={() => setShowProjectsSidebar(false)}
         onNavigateToIdeas={() => setShowIdeasScreen(true)}
+        onNavigateToTakes={() => setShowTakesScreen(true)}
       />
 
       {/* Ideas Screen */}
       {showIdeasScreen && (
         <View className="absolute inset-0 z-50">
           <IdeasScreen onBack={() => setShowIdeasScreen(false)} />
+        </View>
+      )}
+
+      {/* Takes Screen */}
+      {showTakesScreen && (
+        <View className="absolute inset-0 z-50">
+          <TakesScreen onBack={() => setShowTakesScreen(false)} />
         </View>
       )}
     </View>

@@ -14,9 +14,10 @@ interface ProjectsSidebarProps {
   visible: boolean;
   onClose: () => void;
   onNavigateToIdeas?: () => void;
+  onNavigateToTakes?: () => void;
 }
 
-export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }: ProjectsSidebarProps) {
+export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, onNavigateToTakes }: ProjectsSidebarProps) {
   const insets = useSafeAreaInsets();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -216,7 +217,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
               </View>
 
               {/* Explore LYRIQs */}
-              <View className="px-3 pb-4">
+              <View className="px-3 pb-1">
                 <Pressable 
                   onPress={() => {
                     onNavigateToIdeas?.();
@@ -226,6 +227,20 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
                 >
                   <Ionicons name="compass-outline" size={16} color="#9CA3AF" />
                   <Text className="text-gray-200 text-sm ml-3">Explore LYRIQs</Text>
+                </Pressable>
+              </View>
+
+              {/* All MUMBLs */}
+              <View className="px-3 pb-4">
+                <Pressable 
+                  onPress={() => {
+                    onNavigateToTakes?.();
+                    onClose();
+                  }}
+                  className="flex-row items-center p-3 rounded-lg hover:bg-gray-800 active:bg-gray-800"
+                >
+                  <Ionicons name="mic-outline" size={16} color="#9CA3AF" />
+                  <Text className="text-gray-200 text-sm ml-3">All MUMBLs</Text>
                 </Pressable>
               </View>
 

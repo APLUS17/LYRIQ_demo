@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
-import { View, Text, Pressable, TextInput, Modal, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -18,11 +18,10 @@ import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-
 // Import the new modular components
 import { useLyricStore } from './src/state/lyricStore';
 import RecordingModal from './src/components/RecordingModal';
-import Toast from './src/components/Toast';
+// import Toast from './src/components/Toast';
 import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
 import IdeasScreen from './src/screens/IdeasScreen';
-import { SectionSelectionModal } from './src/components/SectionSelectionModal';
 
 
 
@@ -145,9 +144,9 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
           className="flex-row items-center bg-gray-700 px-3 py-2 rounded-lg"
         >
           <Ionicons name="menu" size={12} color="#9CA3AF" />
-          <Text className="ml-2 text-sm font-medium text-gray-200">
-            {section.title}
-          </Text>
+           <Text className="ml-2 text-sm font-medium text-gray-200">
+             {(section.title && section.title.length > 0) ? section.title : (section.type?.charAt(0).toUpperCase() + section.type?.slice(1))}
+           </Text>
           <Ionicons name="chevron-down" size={12} color="#9CA3AF" className="ml-1" />
         </Pressable>
 
@@ -246,7 +245,6 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
-  const [showSectionModal, setShowSectionModal] = useState(false);
   
   const { 
     sections, 
@@ -263,7 +261,6 @@ function MainScreen() {
     toggleStarSection,
     currentProject,
     renameProject,
-    updateSectionTitle,
   } = useLyricStore();
 
   // Title editing state
@@ -408,7 +405,7 @@ function MainScreen() {
             ))}
 
             {/* Add Section Button */}
-            <AddSectionButton onPress={() => setShowSectionModal(true)} />
+            <AddSectionButton onPress={() => addSection('verse')} />
 
             {sections.length === 0 && (
               <View className="items-center py-12">
@@ -442,21 +439,7 @@ function MainScreen() {
       {/* Recording Modal */}
       <RecordingModal />
 
-      {/* Section Selection Modal */}
-      <SectionSelectionModal
-        visible={showSectionModal}
-        onClose={() => setShowSectionModal(false)}
-        onSelectSection={(sectionType: string, customLabel?: string) => {
-          addSection(sectionType);
-          const latest = useLyricStore.getState().sections;
-          const newSec = latest[latest.length - 1];
-          const title = (customLabel && customLabel.trim().length > 0) ? customLabel.trim() : sectionType;
-          if (newSec?.id && title) {
-            useLyricStore.getState().updateSectionTitle?.(newSec.id, title);
-          }
-        }}
-      />
-      
+
        {/* Save Toast */}
        {showSaveToast && (
          <View 

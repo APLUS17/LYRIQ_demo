@@ -300,7 +300,8 @@ export const useLyricStore = create<LyricState>()(
       getStarredSections: () => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
-        return s.sectionsByProject[pid]?.filter((sec: Section) => sec.isStarred) || [];
+        const list = (s.sectionsByProject[pid] || []).filter(Boolean);
+        return list.filter((sec: any) => sec && (sec as any).isStarred === true);
       },
       getSectionsForProject: (projectId: string) => {
         return get().sectionsByProject[projectId] || [];

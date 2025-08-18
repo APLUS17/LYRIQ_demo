@@ -31,33 +31,16 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
 
-  // Debug: Add render counter to identify re-renders
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log(`[IdeasScreen] Render #${renderCount.current}`);
+  // Granular selectors to prevent broad subscriptions
+  const currentProjectId = useLyricStore(s => s.currentProjectId ?? '__unassigned__');
+  const recordingsByProject = useLyricStore(s => s.recordingsByProject);
+  const sectionsByProject = useLyricStore(s => s.sectionsByProject);
+  const removeRecording = useLyricStore(s => s.removeRecording);
+  const updateRecordingName = useLyricStore(s => s.updateRecordingName);
 
-  // ✅ Use store directly to avoid selector loops
-  const store = useLyricStore();
-  
-  // ✅ Memoize store data to prevent unnecessary recalculations
-  const recordings = useMemo(() => {
-    const currentProjectId = store.currentProjectId ?? '__unassigned__';
-    return store.recordingsByProject[currentProjectId] || [];
-  }, [store.currentProjectId, store.recordingsByProject]);
-
-  const sections = useMemo(() => {
-    const currentProjectId = store.currentProjectId ?? '__unassigned__';
-    return store.sectionsByProject[currentProjectId] || [];
-  }, [store.currentProjectId, store.sectionsByProject]);
-
-  // ✅ Use ref for store access to avoid subscription loops
-  const storeRef = useRef(useLyricStore.getState());
-  useEffect(() => {
-    const unsubscribe = useLyricStore.subscribe((s) => {
-      storeRef.current = s;
-    });
-    return unsubscribe;
-  }, []);
+  // Derive lists for current project
+  const recordings = useMemo(() => recordingsByProject[currentProjectId] || [], [recordingsByProject, currentProjectId]);
+  const sections = useMemo(() => sectionsByProject[currentProjectId] || [], [sectionsByProject, currentProjectId]);
 
   // --- Takes player state (voice memos style) ---
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -376,7 +359,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               onSelect={() => setSelectedId(r.id)}
               onEllipsis={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }}
               onToggle={togglePlayPause}
-              onDelete={() => store.removeRecording(r.id)}
+              onDelete={() => removeRecording(r.id)}
               currentTime={selectedId === r.id ? currentTime : 0}
               totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
               isPlaying={selectedId === r.id ? isPlaying : false}
@@ -389,21 +372,19 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         <View style={{ height: 120 }} />
       </View>
     );
-  }, [recordings, selectedId, togglePlayPause, store, currentTime, totalTime, isPlaying, RecordingRow]);
+  }, [recordings, selectedId, togglePlayPause, currentTime, totalTime, isPlaying, RecordingRow]);
 
   // ✅ Stabilize all handlers with useCallback
   const openProjectFromIdea = useCallback((idea: IdeaCard) => {
-    const { projects, createProject, loadProject } = storeRef.current;
-    // Find by name
-    const existing = projects.find(p => p.name === idea.title);
+    const s = useLyricStore.getState();
+    const existing = s.projects.find((p: any) => p.name === idea.title);
     if (existing) {
-      loadProject(existing.id);
+      s.loadProject(existing.id);
     } else {
-      createProject(idea.title);
-      // After creation, just load the most recent project
-      const newProjects = useLyricStore.getState().projects;
-      if (newProjects.length > 0) {
-        loadProject(newProjects[0].id);
+      s.createProject(idea.title);
+      const after = useLyricStore.getState();
+      if (after.projects.length > 0) {
+        after.loadProject(after.projects[0].id);
       }
     }
     onBack();
@@ -449,23 +430,20 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            if (ideaType === 'take') {
-              // Delete recording from store
-              store.removeRecording(ideaId);
-            } else if (ideaType === 'verse') {
-              // Delete section from store
-              const { removeSection } = useLyricStore.getState();
-              removeSection(ideaId);
-            } else {
-              // Delete local idea
-              setLocalIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
-            }
-          },
+              onPress: () => {
+                if (ideaType === 'take') {
+                  removeRecording(ideaId);
+                } else if (ideaType === 'verse') {
+                  const { removeSection } = useLyricStore.getState();
+                  removeSection(ideaId);
+                } else {
+                  setLocalIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+                }
+              },
         },
       ]
     );
-  }, [store]);
+  }, [removeRecording]);
 
   // ✅ Stabilize FAB handlers
   const handleFabRecord = useCallback(() => {
@@ -619,7 +597,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           <Pressable onPress={() => { setRenameVisible(true); }} className="p-4 rounded-2xl bg-gray-800 mb-2">
             <Text className="text-white text-center">Rename</Text>
           </Pressable>
-          <Pressable onPress={() => { if (actionsId) store.removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
+          <Pressable onPress={() => { if (actionsId) removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
             <Text className="text-white text-center">Delete</Text>
           </Pressable>
         </View>
@@ -635,7 +613,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Cancel</Text>
               </Pressable>
-              <Pressable onPress={() => { if (actionsId) store.updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
+              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Save</Text>
               </Pressable>
             </View>

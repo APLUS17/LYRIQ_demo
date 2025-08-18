@@ -77,10 +77,8 @@ interface LyricState {
   getStarredSections: () => Section[];
   getSectionsForProject: (projectId: string) => Section[];
   
-  // Computed Properties
-  sections: Section[];
-  currentProject: Project | null;
-  recordings: Recording[];
+  // Additional selector helper
+  getCurrentProject: () => Project | null;
 }
 
 export const useLyricStore = create<LyricState>()(
@@ -330,6 +328,10 @@ export const useLyricStore = create<LyricState>()(
         const pid = s.currentProjectId ?? '__unassigned__';
         return s.recordingsByProject[pid] || [];
       },
+      getCurrentProject: () => {
+        const s = get();
+        return s.projects.find((p: Project) => p.id === s.currentProjectId) || null;
+      },
       getStarredSections: () => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
@@ -339,22 +341,7 @@ export const useLyricStore = create<LyricState>()(
       getSectionsForProject: (projectId: string) => {
         return get().sectionsByProject[projectId] || [];
       },
-
-             // --- Computed Properties ---
-       get sections() {
-         const s = get();
-         const pid = s.currentProjectId ?? '__unassigned__';
-         return s.sectionsByProject[pid] || [];
-       },
-       get currentProject() {
-         const s = get();
-         return s.projects.find((p: Project) => p.id === s.currentProjectId) || null;
-       },
-       get recordings() {
-         const s = get();
-         const pid = s.currentProjectId ?? '__unassigned__';
-         return s.recordingsByProject[pid] || [];
-       },
+      
     }),
     {
       name: 'lyriq-storage',

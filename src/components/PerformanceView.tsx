@@ -8,7 +8,7 @@ import RecordingModal from './RecordingModal';
 
 // Audio Player Component
 function AudioPlayer() {
-  const { recordings } = useLyricStore();
+  const recordings = useLyricStore(s => s.getRecordings());
   const [currentRecording, setCurrentRecording] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -379,7 +379,9 @@ function AudioPlayer() {
 // Performance View Component
 export default function PerformanceView() {
   const insets = useSafeAreaInsets();
-  const { sections, togglePerformanceMode, toggleRecordingModal } = useLyricStore();
+  const sections = useLyricStore(s => s.getSections());
+  const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
+  const toggleRecordingModal = useLyricStore(s => s.toggleRecordingModal);
 
   // Disable keyboard in read-only mode
   React.useEffect(() => {
@@ -399,7 +401,7 @@ export default function PerformanceView() {
       );
     }
 
-    return sections.map((section) => {
+    return sections.map((section: any) => {
       if (!section || !section.id) return null; // Safety check
       
       return (

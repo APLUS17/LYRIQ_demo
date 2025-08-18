@@ -29,17 +29,15 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
   const translateX = useSharedValue(-100);
   const opacity = useSharedValue(0);
 
-  const {
-    projects,
-    currentProject,
-    createProject,
-    loadProject,
-    deleteProject,
-    renameProject,
-    recordings,
-    getStarredSections,
-    getSectionsForProject,
-  } = useLyricStore();
+  const projects = useLyricStore(s => s.projects);
+  const currentProjectId = useLyricStore(s => s.currentProjectId);
+  const currentProject = useLyricStore(s => s.projects.find(p => p.id === s.currentProjectId) || null);
+  const createProject = useLyricStore(s => s.createProject);
+  const loadProject = useLyricStore(s => s.loadProject);
+  const deleteProject = useLyricStore(s => s.deleteProject);
+  const renameProject = useLyricStore(s => s.renameProject);
+  const getStarredSections = useLyricStore(s => s.getStarredSections);
+  const getSectionsForProject = useLyricStore(s => s.getSectionsForProject);
 
   React.useEffect(() => {
     if (visible) {

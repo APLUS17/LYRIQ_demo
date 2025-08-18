@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
@@ -261,7 +261,9 @@ function MainScreen() {
   const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
   const saveCurrentProject = useLyricStore(s => s.saveCurrentProject);
   const toggleStarSection = useLyricStore(s => s.toggleStarSection);
-  const currentProject = useLyricStore(s => s.currentProject); 
+  const currentProjectId = useLyricStore(s => s.currentProjectId);
+  const projects = useLyricStore(s => s.projects);
+  const currentProject = useMemo(() => projects.find(p => p.id === currentProjectId) || null, [projects, currentProjectId]);
   const renameProject = useLyricStore(s => s.renameProject);
 
   // Title editing state
@@ -287,7 +289,7 @@ function MainScreen() {
     if (!currentProject) {
       saveCurrentProject();
     }
-    const proj = useLyricStore.getState().currentProject;
+    const proj = useLyricStore.getState().getCurrentProject();
     if (proj) {
       renameProject(proj.id, newName);
     }

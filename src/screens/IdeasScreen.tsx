@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLyricStore } from '../state/lyricStore';
 import type { Section, Recording } from '../state/lyricStore';
 import { Audio } from 'expo-av';
+import MumbleRow from "../components/MumbleRow";
 
 interface IdeaCard {
   id: string;
@@ -368,7 +369,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
 
         <ScrollView style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#0B0B0B' }}>
           {items.map((r) => (
-            <RecordingRow
+            <MumbleRow
               key={r.id}
               r={r}
               isSelected={selectedId === r.id}
@@ -379,6 +380,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               currentTime={selectedId === r.id ? currentTime : 0}
               totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
               isPlaying={selectedId === r.id ? isPlaying : false}
+              onSeekBy={seekBy}
             />
           ))}
         </ScrollView>
@@ -492,6 +494,9 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
       
       {/* Header */}
       <View className="flex-row items-center px-4 pt-4 pb-6">
+        <Pressable onPress={onBack} className="w-10 h-10 rounded-full items-center justify-center mr-2" style={{ backgroundColor: "#1F2937" }}>
+          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+        </Pressable>
         <Text className="text-4xl font-bold text-white" style={{ fontSize: 34, fontWeight: '700', flex: 1 }}>Ideas</Text>
         <View className="w-10 h-10 bg-gray-600 rounded-full items-center justify-center">
           <Text className="text-white font-bold text-sm">A</Text>
@@ -606,7 +611,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         )}
         {activeTab === 'takes' && renderTakes()}
       </ScrollView>
-
+ 
       {/* Actions Sheet */}
       <Modal visible={actionsId != null} transparent animationType="fade" onRequestClose={() => setActionsId(null)}>
         <Pressable className="flex-1 bg-black/40" onPress={() => setActionsId(null)} />
@@ -619,7 +624,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           </Pressable>
         </View>
       </Modal>
-
+ 
       {/* Rename Modal */}
       <Modal visible={renameVisible} transparent animationType="slide" onRequestClose={() => setRenameVisible(false)}>
         <View className="flex-1 justify-center bg-black/50 p-6">
@@ -637,24 +642,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           </View>
         </View>
       </Modal>
-
-      {/* Floating Add Button */}
-      <View className="absolute bottom-8 right-6">
-        <Pressable 
-          onPress={onBack}
-          className="w-16 h-16 bg-gray-800 rounded-3xl items-center justify-center"
-          style={{ 
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8
-          }}
-        >
-          <Ionicons name="add" size={32} color="white" />
-        </Pressable>
-      </View>
-
+ 
       {/* Edit Modal */}
       <Modal
         visible={!!editingIdea}

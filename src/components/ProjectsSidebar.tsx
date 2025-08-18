@@ -116,9 +116,12 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
 
   const starredSections = getStarredSections();
   const sortedProjects = React.useMemo(() => {
-    return [...projects].sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const saved = projects.filter((p: any) => p.savedAt);
+    return [...saved].sort((a: any, b: any) => {
+      const aKey = a.savedAt ?? a.createdAt;
+      const bKey = b.savedAt ?? b.createdAt;
+      return new Date(bKey).getTime() - new Date(aKey).getTime();
+    });
   }, [projects]);
 
   const filteredProjects = React.useMemo(() => {
@@ -228,34 +231,39 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas }:
 
               {/* Recent Songs List */}
               <View className="px-3">
-                {filteredProjects.map((project) => (
-                  <Pressable
-                    key={project.id}
-                    onPress={() => {
-                      loadProject(project.id);
-                      onClose();
-                    }}
-                    onLongPress={() => handleLongPress(project)}
-                    className={`flex-row items-center p-3 rounded-lg mb-1 ${project.id === currentProject?.id ? "bg-gray-800" : "hover:bg-gray-800 active:bg-gray-800"}`}
-                    style={{ paddingLeft: 8 }}
-                  >
-                    {/* Removed music note icon */}
-                    <View className="flex-1">
-                      <Text className="text-gray-200 text-sm" numberOfLines={1} style={{ marginLeft: 0 }}>
-                        {project.name}
-                      </Text>
-                      {/* Lyrics snippet */}
-                      {(() => {
-                        const projectSections = getSectionsForProject(project.id);
-                        return projectSections.length > 0 ? (
+                {filteredProjects.map((project: any) => {
+                  const projectSections = getSectionsForProject(project.id);
+                  const starredCount = projectSections.filter((s: any) => s?.isStarred).length;
+                  return (
+                    <Pressable
+                      key={project.id}
+                      onPress={() => {
+                        loadProject(project.id);
+                        onClose();
+                      }}
+                      onLongPress={() => handleLongPress(project)}
+                      className={`flex-row items-center p-3 rounded-lg mb-1 ${project.id === currentProject?.id ? "bg-gray-800" : "hover:bg-gray-800 active:bg-gray-800"}`}
+                      style={{ paddingLeft: 8 }}
+                    >
+                      <View className="flex-1">
+                        <Text className="text-gray-200 text-sm" numberOfLines={1} style={{ marginLeft: 0 }}>
+                          {project.name}
+                        </Text>
+                        {projectSections.length > 0 ? (
                           <Text className="text-gray-500 text-xs mt-1" numberOfLines={1} style={{ marginLeft: 0 }}>
-                            {projectSections.map((s: any) => s.content || '').join(' ').slice(0, 80)}
+                            {projectSections.map((s: any) => s.content || "").join(" ").slice(0, 80)}
                           </Text>
-                        ) : null;
-                      })()}
-                    </View>
-                  </Pressable>
-                ))}
+                        ) : null}
+                      </View>
+                      {starredCount > 0 && (
+                        <View className="flex-row items-center px-2 py-1 rounded-full" style={{ backgroundColor: "#1F2937" }}>
+                          <Ionicons name="star" size={12} color="#FBBF24" />
+                          <Text className="text-gray-300 text-xs ml-1">{starredCount}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
 
                 {projects.length === 0 && searchQuery.trim() === "" && (
                   <View className="px-3 py-8">

@@ -22,6 +22,7 @@ import Toast from './src/components/Toast';
 import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
 import IdeasScreen from './src/screens/IdeasScreen';
+import { SectionSelectionModal } from './src/components/SectionSelectionModal';
 
 
 
@@ -245,6 +246,7 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [showSectionModal, setShowSectionModal] = useState(false);
   
   const { 
     sections, 
@@ -260,7 +262,8 @@ function MainScreen() {
     saveCurrentProject,
     toggleStarSection,
     currentProject,
-    renameProject
+    renameProject,
+    updateSectionTitle,
   } = useLyricStore();
 
   // Title editing state
@@ -405,7 +408,7 @@ function MainScreen() {
             ))}
 
             {/* Add Section Button */}
-            <AddSectionButton onPress={() => addSection('verse')} />
+            <AddSectionButton onPress={() => setShowSectionModal(true)} />
 
             {sections.length === 0 && (
               <View className="items-center py-12">
@@ -438,6 +441,21 @@ function MainScreen() {
 
       {/* Recording Modal */}
       <RecordingModal />
+
+      {/* Section Selection Modal */}
+      <SectionSelectionModal
+        visible={showSectionModal}
+        onClose={() => setShowSectionModal(false)}
+        onSelectSection={(sectionType: string, customLabel?: string) => {
+          addSection(sectionType);
+          const latest = useLyricStore.getState().sections;
+          const newSec = latest[latest.length - 1];
+          const title = (customLabel && customLabel.trim().length > 0) ? customLabel.trim() : sectionType;
+          if (newSec?.id && title) {
+            useLyricStore.getState().updateSectionTitle?.(newSec.id, title);
+          }
+        }}
+      />
       
        {/* Save Toast */}
        {showSaveToast && (

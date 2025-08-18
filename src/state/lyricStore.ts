@@ -24,6 +24,7 @@ export type Project = {
   id: string;
   name: string;
   createdAt: string;
+  savedAt?: string;
 };
 
 interface LyricState {
@@ -60,6 +61,7 @@ interface LyricState {
   updateSection: (id: string, content: string) => void;
   updateSectionType: (id: string, type: string) => void;
   updateSectionCount: (id: string, count: number) => void;
+  updateSectionTitle: (id: string, title: string) => void;
   removeSection: (id: string) => void;
   reorderSections: (fromIndex: number, toIndex: number) => void;
   toggleStarSection: (id: string) => void;
@@ -149,8 +151,11 @@ export const useLyricStore = create<LyricState>()(
         const s = get();
         const currentProject = s.projects.find((p: Project) => p.id === s.currentProjectId);
         if (currentProject) {
+          const now = new Date().toISOString();
           set((state: LyricState) => ({
-            projects: state.projects.map((p: Project) => p.id === currentProject.id ? { ...currentProject, createdAt: new Date().toISOString() } : p),
+            projects: state.projects.map((p: Project) =>
+              p.id === currentProject.id ? { ...currentProject, savedAt: now } : p
+            ),
           }));
         }
       },
@@ -188,6 +193,16 @@ export const useLyricStore = create<LyricState>()(
           sectionsByProject: {
             ...s.sectionsByProject,
             [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, type } : sec),
+          },
+        });
+      },
+      updateSectionTitle: (id: string, title: string) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set({
+          sectionsByProject: {
+            ...s.sectionsByProject,
+            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, title } : sec),
           },
         });
       },

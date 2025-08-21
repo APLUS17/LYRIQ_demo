@@ -29,7 +29,10 @@ interface LibraryScreenProps {
 export function LibraryScreen({ onBack, onOpenLyric, onOpenMumble }: LibraryScreenProps) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'lyrics' | 'melodies'>('lyrics');
-  const { sections } = useLyricStore();
+  const sections = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.sectionsByProject[pid] ?? [];
+  });
   
   // Get mumble recordings from the store (we'll need to make this accessible)
   const mumbleRecordings = []; // We'll connect this to MumbleRecorder store

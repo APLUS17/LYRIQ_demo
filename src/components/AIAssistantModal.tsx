@@ -28,7 +28,10 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function AIAssistantModal() {
   const insets = useSafeAreaInsets();
   const { isVisible, isLoading, currentResponse, hideModal, setLoading, setResponse } = useAIAssistantStore();
-  const { sections } = useLyricStore();
+  const sections = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.sectionsByProject[pid] ?? [];
+  });
   const [customPrompt, setCustomPrompt] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);

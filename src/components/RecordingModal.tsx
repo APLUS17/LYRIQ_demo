@@ -26,7 +26,8 @@ const SNAP_POINT = height * 0.4; // % of screen the modal should cover
 
 export default function RecordingModal() {
   const insets = useSafeAreaInsets();
-  const { isRecordingModalVisible, toggleRecordingModal } = useLyricStore();
+  const isRecordingModalVisible = useLyricStore(s => s.isRecordingModalVisible);
+  const toggleRecordingModal = useLyricStore(s => s.toggleRecordingModal);
   const translateY = useSharedValue(height);
 
   /* animate in/out whenever visibility changes */

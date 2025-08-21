@@ -9,7 +9,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useLyricStore } from '../state/lyricStore';
-import { shallow } from 'zustand/shallow';
 import type { Project } from '../state/lyricStore';
 
 interface ProjectsSidebarProps {
@@ -32,21 +31,14 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
   const opacity = useSharedValue(0);
 
   const projects = useLyricStore(s => s.projects);
-  const currentProjectId = useLyricStore(s => s.currentProjectId);
   const currentProject = useLyricStore(
-    s => s.projects.find(p => p.id === s.currentProjectId) || null
+    s => s.projects.find(p => p.id === s.currentProjectId) ?? null
   ) as Project | null;
   const createProject = useLyricStore(s => s.createProject);
   const loadProject = useLyricStore(s => s.loadProject);
   const deleteProject = useLyricStore(s => s.deleteProject);
   const renameProject = useLyricStore(s => s.renameProject);
   const getSectionsForProject = useLyricStore(s => s.getSectionsForProject);
-  // Use Zustand selector for starredSections to avoid infinite re-renders
-  const starredSections = useLyricStore(s => {
-    const pid = s.currentProjectId ?? '__unassigned__';
-    const list = (s.sectionsByProject[pid] ?? []).filter(Boolean);
-    return list.filter((sec: any) => sec && (sec as any).isStarred === true);
-  });
 
   React.useEffect(() => {
     if (visible) {
@@ -113,18 +105,10 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
 
   const sortedProjects = React.useMemo(() => {
-    const saved = projects.filter((p: any) => p.savedAt);
-    return [...saved].sort((a: any, b: any) => {
+    const saved = projects.filter((p: Project) => p.savedAt);
+    return [...saved].sort((a: Project, b: Project) => {
       const aKey = a.savedAt ?? a.createdAt;
       const bKey = b.savedAt ?? b.createdAt;
       return new Date(bKey).getTime() - new Date(aKey).getTime();

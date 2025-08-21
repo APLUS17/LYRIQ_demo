@@ -1,24 +1,27 @@
 import React from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLyricStore, LyricSection as LyricSectionType } from '../state/lyricStore';
+import { useLyricStore, Section } from '../state/lyricStore';
+import { useState } from 'react';
 
 interface LyricSectionProps {
-  section: LyricSectionType;
+  section: Section;
 }
 
 export function LyricSection({ section }: LyricSectionProps) {
-  const { updateSection, toggleCollapse, removeSection } = useLyricStore();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const updateSection = useLyricStore(s => s.updateSection);
+  const removeSection = useLyricStore(s => s.removeSection);
 
   return (
     <View className="mb-6">
       {/* Section Header */}
       <Pressable
-        onPress={() => toggleCollapse(section.id)}
+        onPress={() => setIsCollapsed(!isCollapsed)}
         className="flex-row items-center justify-between mb-3"
       >
         <Text className="text-lg font-medium text-gray-900">
-          {section.title}
+          {section.title || section.type}
         </Text>
         <View className="flex-row items-center">
           <Pressable
@@ -28,7 +31,7 @@ export function LyricSection({ section }: LyricSectionProps) {
             <Ionicons name="trash-outline" size={16} color="#6B7280" />
           </Pressable>
           <Ionicons
-            name={section.collapsed ? "chevron-down" : "chevron-up"}
+            name={isCollapsed ? "chevron-down" : "chevron-up"}
             size={20}
             color="#6B7280"
           />
@@ -36,7 +39,7 @@ export function LyricSection({ section }: LyricSectionProps) {
       </Pressable>
 
       {/* Section Content */}
-      {!section.collapsed && (
+      {!isCollapsed && (
         <TextInput
           multiline
           placeholder={`Write your ${section.type} here...`}

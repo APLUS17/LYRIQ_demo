@@ -12,7 +12,12 @@ interface LyricPadScreenProps {
 
 export function LyricPadScreen({ onBack }: LyricPadScreenProps = {}) {
   const insets = useSafeAreaInsets();
-  const { sections, addSection, updateSection } = useLyricStore();
+  const sections = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.sectionsByProject[pid] ?? [];
+  });
+  const addSection = useLyricStore(s => s.addSection);
+  const updateSection = useLyricStore(s => s.updateSection);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
 

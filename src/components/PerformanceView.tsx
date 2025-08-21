@@ -8,7 +8,10 @@ import RecordingModal from './RecordingModal';
 
 // Audio Player Component
 function AudioPlayer() {
-  const recordings = useLyricStore(s => s.getRecordings());
+  const recordings = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.recordingsByProject[pid] ?? [];
+  });
   const [currentRecording, setCurrentRecording] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -379,7 +382,10 @@ function AudioPlayer() {
 // Performance View Component
 export default function PerformanceView() {
   const insets = useSafeAreaInsets();
-  const sections = useLyricStore(s => s.getSections());
+  const sections = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.sectionsByProject[pid] ?? [];
+  });
   const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
   const toggleRecordingModal = useLyricStore(s => s.toggleRecordingModal);
 

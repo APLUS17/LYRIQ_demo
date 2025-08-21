@@ -39,8 +39,8 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   const updateRecordingName = useLyricStore(s => s.updateRecordingName);
 
   // Derive lists for current project
-  const recordings = useMemo(() => recordingsByProject[currentProjectId] || [], [recordingsByProject, currentProjectId]);
-  const sections = useMemo(() => sectionsByProject[currentProjectId] || [], [sectionsByProject, currentProjectId]);
+  const recordings = useMemo(() => recordingsByProject[currentProjectId] ?? [], [recordingsByProject, currentProjectId]);
+  const sections = useMemo(() => sectionsByProject[currentProjectId] ?? [], [sectionsByProject, currentProjectId]);
 
   // --- Takes player state (voice memos style) ---
   const [selectedId, setSelectedId] = useState<string | null>(null);

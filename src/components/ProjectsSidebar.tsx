@@ -9,6 +9,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useLyricStore } from '../state/lyricStore';
+import { shallow } from 'zustand/shallow';
+import type { Project } from '../state/lyricStore';
 
 interface ProjectsSidebarProps {
   visible: boolean;
@@ -31,13 +33,20 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
 
   const projects = useLyricStore(s => s.projects);
   const currentProjectId = useLyricStore(s => s.currentProjectId);
-  const currentProject = useLyricStore(s => s.projects.find(p => p.id === s.currentProjectId) || null);
+  const currentProject = useLyricStore(
+    s => s.projects.find(p => p.id === s.currentProjectId) || null
+  ) as Project | null;
   const createProject = useLyricStore(s => s.createProject);
   const loadProject = useLyricStore(s => s.loadProject);
   const deleteProject = useLyricStore(s => s.deleteProject);
   const renameProject = useLyricStore(s => s.renameProject);
-  const getStarredSections = useLyricStore(s => s.getStarredSections);
   const getSectionsForProject = useLyricStore(s => s.getSectionsForProject);
+  // Use Zustand selector for starredSections to avoid infinite re-renders
+  const starredSections = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    const list = (s.sectionsByProject[pid] ?? []).filter(Boolean);
+    return list.filter((sec: any) => sec && (sec as any).isStarred === true);
+  });
 
   React.useEffect(() => {
     if (visible) {
@@ -113,7 +122,6 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
     });
   };
 
-  const starredSections = getStarredSections();
   const sortedProjects = React.useMemo(() => {
     const saved = projects.filter((p: any) => p.savedAt);
     return [...saved].sort((a: any, b: any) => {
@@ -244,7 +252,7 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
 
               {/* Recent Songs List */}
               <View className="px-3">
-                {filteredProjects.map((project: any) => {
+                {filteredProjects.map((project: Project) => {
                   const projectSections = getSectionsForProject(project.id);
                   const starredCount = projectSections.filter((s: any) => s?.isStarred).length;
                   return (

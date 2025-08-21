@@ -159,7 +159,9 @@ export function ImprovedAIModal({ visible, onClose }: ImprovedAIModalProps) {
     if (sections.length === 0) {
       addSection('verse');
       setTimeout(() => {
-        const newSections = useLyricStore.getState().sections;
+        const state = useLyricStore.getState();
+        const pid = state.currentProjectId ?? '__unassigned__';
+        const newSections = state.sectionsByProject[pid] ?? [];
         if (newSections.length > 0) {
           updateSection(newSections[0].id, response);
         }

@@ -19,6 +19,9 @@
         "android.permission.RECORD_AUDIO"
       ]
     },
-    "plugins": []
+    "plugins": [],
+    "extra": {
+      "EXPO_PUBLIC_PROJECT_ID": "your-project-id"
+    }
   }
 }

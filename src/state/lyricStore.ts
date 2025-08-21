@@ -87,8 +87,8 @@ export const useLyricStore = create<LyricState>()(
       // --- Project Management ---
       projects: [],
       currentProjectId: null,
-      sectionsByProject: {},
-      recordingsByProject: {},
+      sectionsByProject: { '__unassigned__': [] },
+      recordingsByProject: { '__unassigned__': [] },
 
       // --- Recording Modal State ---
       isRecordingModalVisible: false,
@@ -185,7 +185,7 @@ export const useLyricStore = create<LyricState>()(
         set((state: LyricState) => ({
           sectionsByProject: {
             ...state.sectionsByProject,
-            [pid!]: [...(state.sectionsByProject[pid!] || []), next],
+            [pid!]: [...(state.sectionsByProject[pid!] ?? []), next],
           },
         }));
         
@@ -198,7 +198,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, content } : sec),
+            [pid]: (s.sectionsByProject[pid] ?? []).map((sec: Section) => sec.id === id ? { ...sec, content } : sec),
           },
         });
       },
@@ -208,7 +208,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, type } : sec),
+            [pid]: (s.sectionsByProject[pid] ?? []).map((sec: Section) => sec.id === id ? { ...sec, type } : sec),
           },
         });
       },
@@ -218,7 +218,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, title } : sec),
+            [pid]: (s.sectionsByProject[pid] ?? []).map((sec: Section) => sec.id === id ? { ...sec, title } : sec),
           },
         });
       },
@@ -228,7 +228,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).map((sec: Section) => sec.id === id ? { ...sec, count } : sec),
+            [pid]: (s.sectionsByProject[pid] ?? []).map((sec: Section) => sec.id === id ? { ...sec, count } : sec),
           },
         });
       },
@@ -238,7 +238,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           sectionsByProject: {
             ...s.sectionsByProject,
-            [pid]: (s.sectionsByProject[pid] || []).filter((sec: Section) => sec.id !== id),
+            [pid]: (s.sectionsByProject[pid] ?? []).filter((sec: Section) => sec.id !== id),
           },
         });
       },
@@ -246,7 +246,7 @@ export const useLyricStore = create<LyricState>()(
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set((state: LyricState) => {
-          const sections = [...state.sectionsByProject[pid] || []];
+          const sections = [...state.sectionsByProject[pid] ?? []];
           const [movedSection] = sections.splice(fromIndex, 1);
           sections.splice(toIndex, 0, movedSection);
           return {
@@ -261,7 +261,7 @@ export const useLyricStore = create<LyricState>()(
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
         set((state: LyricState) => {
-          const sections = [...state.sectionsByProject[pid] || []];
+          const sections = [...state.sectionsByProject[pid] ?? []];
           const sectionIndex = sections.findIndex((sec: Section) => sec.id === id);
           if (sectionIndex !== -1) {
             const updatedSections = [...sections];
@@ -292,7 +292,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           recordingsByProject: {
             ...s.recordingsByProject,
-            [pid]: [next, ...(s.recordingsByProject[pid] || [])],
+            [pid]: [next, ...(s.recordingsByProject[pid] ?? [])],
           },
         });
       },
@@ -302,7 +302,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           recordingsByProject: {
             ...s.recordingsByProject,
-            [pid]: (s.recordingsByProject[pid] || []).filter((r: Recording) => r.id !== id),
+            [pid]: (s.recordingsByProject[pid] ?? []).filter((r: Recording) => r.id !== id),
           },
         });
       },
@@ -312,7 +312,7 @@ export const useLyricStore = create<LyricState>()(
         set({
           recordingsByProject: {
             ...s.recordingsByProject,
-            [pid]: (s.recordingsByProject[pid] || []).map((r: Recording) => r.id === id ? { ...r, name } : r),
+            [pid]: (s.recordingsByProject[pid] ?? []).map((r: Recording) => r.id === id ? { ...r, name } : r),
           },
         });
       },
@@ -321,12 +321,12 @@ export const useLyricStore = create<LyricState>()(
       getSections: () => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
-        return s.sectionsByProject[pid] || [];
+        return s.sectionsByProject[pid] ?? [];
       },
       getRecordings: () => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
-        return s.recordingsByProject[pid] || [];
+        return s.recordingsByProject[pid] ?? [];
       },
       getCurrentProject: () => {
         const s = get();
@@ -335,11 +335,11 @@ export const useLyricStore = create<LyricState>()(
       getStarredSections: () => {
         const s = get();
         const pid = s.currentProjectId ?? '__unassigned__';
-        const list = (s.sectionsByProject[pid] || []).filter(Boolean);
+        const list = (s.sectionsByProject[pid] ?? []).filter(Boolean);
         return list.filter((sec: any) => sec && (sec as any).isStarred === true);
       },
       getSectionsForProject: (projectId: string) => {
-        return get().sectionsByProject[projectId] || [];
+        return get().sectionsByProject[projectId] ?? [];
       },
       
     }),

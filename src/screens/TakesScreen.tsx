@@ -9,13 +9,13 @@ import MumbleRow from "../components/MumbleRow";
 
 export default function TakesScreen({ onBack }: { onBack: () => void }) {
   const insets = useSafeAreaInsets();
-  const store = useLyricStore();
-
-  // Derive current project's recordings
-  const recordings = useMemo(() => {
-    const currentProjectId = store.currentProjectId ?? "__unassigned__";
-    return store.recordingsByProject[currentProjectId] || [];
-  }, [store.currentProjectId, store.recordingsByProject]);
+  // Use optimized selectors
+  const recordings = useLyricStore(s => {
+    const currentProjectId = s.currentProjectId ?? "__unassigned__";
+    return s.recordingsByProject[currentProjectId] ?? [];
+  });
+  const removeRecording = useLyricStore(s => s.removeRecording);
+  const updateRecordingName = useLyricStore(s => s.updateRecordingName);
 
   // Playback state
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -125,7 +125,7 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
               onSelect={() => setSelectedId(r.id)}
               onEllipsis={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }}
               onToggle={togglePlayPause}
-              onDelete={() => store.removeRecording(r.id)}
+              onDelete={() => removeRecording(r.id)}
               currentTime={selectedId === r.id ? currentTime : 0}
               totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
               isPlaying={selectedId === r.id ? isPlaying : false}
@@ -143,7 +143,7 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
           <Pressable onPress={() => { setRenameVisible(true); }} className="p-4 rounded-2xl bg-gray-800 mb-2">
             <Text className="text-white text-center">Rename</Text>
           </Pressable>
-          <Pressable onPress={() => { if (actionsId) store.removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
+          <Pressable onPress={() => { if (actionsId) removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
             <Text className="text-white text-center">Delete</Text>
           </Pressable>
         </View>
@@ -159,7 +159,7 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
               <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Cancel</Text>
               </Pressable>
-              <Pressable onPress={() => { if (actionsId) store.updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
+              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
                 <Text className="text-white text-center">Save</Text>
               </Pressable>
             </View>

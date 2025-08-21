@@ -251,7 +251,20 @@ function MainScreen() {
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showAddToast, setShowAddToast] = useState(false);
   
-  const sections = useLyricStore(s => s.getSections());
+  // Use memoized selectors to prevent fresh references
+  const currentProjectId = useLyricStore(s => s.currentProjectId);
+  const sectionsByProject = useLyricStore(s => s.sectionsByProject);
+  const projects = useLyricStore(s => s.projects);
+  
+  const sections = useMemo(() => {
+    const pid = currentProjectId ?? '__unassigned__';
+    return sectionsByProject[pid] ?? [];
+  }, [currentProjectId, sectionsByProject]);
+  
+  const currentProject = useMemo(() => {
+    return projects.find(p => p.id === currentProjectId) ?? null;
+  }, [projects, currentProjectId]);
+  
   const addSection = useLyricStore(s => s.addSection);
   const updateSection = useLyricStore(s => s.updateSection);
   const updateSectionType = useLyricStore(s => s.updateSectionType);
@@ -261,9 +274,6 @@ function MainScreen() {
   const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
   const saveCurrentProject = useLyricStore(s => s.saveCurrentProject);
   const toggleStarSection = useLyricStore(s => s.toggleStarSection);
-  const currentProjectId = useLyricStore(s => s.currentProjectId);
-  const projects = useLyricStore(s => s.projects);
-  const currentProject = useMemo(() => projects.find(p => p.id === currentProjectId) || null, [projects, currentProjectId]);
   const renameProject = useLyricStore(s => s.renameProject);
 
   // Title editing state
@@ -289,7 +299,8 @@ function MainScreen() {
     if (!currentProject) {
       saveCurrentProject();
     }
-    const proj = useLyricStore.getState().getCurrentProject();
+    const state = useLyricStore.getState();
+    const proj = state.projects.find(p => p.id === state.currentProjectId);
     if (proj) {
       renameProject(proj.id, newName);
     }

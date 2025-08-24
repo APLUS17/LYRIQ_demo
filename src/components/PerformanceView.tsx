@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLyricStore } from '../state/lyricStore';
 
 type LyricLine = { time: string; text: string };
 
@@ -46,6 +47,14 @@ const formatTime = (s: number) => {
 export default function PerformanceViewGlass() {
   const insets = useSafeAreaInsets();
   const [containerH, setContainerH] = useState(0);
+  
+  // Get the toggle function from the store
+  const togglePerformanceMode = useLyricStore(s => s.togglePerformanceMode);
+  
+  // Navigation callback - go back to card view
+  const goBack = () => {
+    togglePerformanceMode(false);
+  };
 
   // Player sizing / drag
   const MIN_PLAYER = 80;
@@ -157,20 +166,11 @@ export default function PerformanceViewGlass() {
       end={{ x: 0.5, y: 1 }}
       style={[styles.screen, { paddingTop: insets.top + 8 }]}
     >
-      {/* Faux status bar */}
-      <View style={styles.statusBar}>
-        <Text style={styles.statusTime}>4:51</Text>
-        <View style={styles.statusRight}>
-          <View style={styles.signalBars}>
-            {[4, 6, 8, 10].map((h, i) => (
-              <View key={i} style={[styles.signalBar, { height: h }]} />
-            ))}
-          </View>
-          <Ionicons name="wifi-outline" size={18} color="#fff" style={{ marginLeft: 6, opacity: 0.9 }} />
-          <View style={styles.battery}>
-            <Text style={styles.batteryText}>2</Text>
-          </View>
-        </View>
+      {/* Back button */}
+      <View style={styles.header}>
+        <Pressable onPress={goBack} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+        </Pressable>
       </View>
 
       {/* Main container */}
@@ -280,43 +280,27 @@ export default function PerformanceViewGlass() {
                       isEditing && styles.lyricEditing,
                     ]}
                   >
-                    {isEditing ? (
-                      <TextInput
-                        value={editValue}
-                        onChangeText={setEditValue}
-                        onBlur={onCommitEdit}
-                        onSubmitEditing={onCommitEdit}
-                        returnKeyType="done"
-                        autoFocus
-                        style={styles.lyricInput}
-                      />
-                    ) : (
-                      <Text
-                        style={[
-                          styles.lyricText,
-                          state === "past" && { fontSize: 16, color: "#888" },
-                          state === "current" && { fontSize: 22, fontWeight: "500", color: "#fff", textShadowColor: "rgba(255,255,255,0.3)", textShadowRadius: 10 },
-                        ]}
-                      >
-                        {item.text}
-                      </Text>
-                    )}
-
-                    <View
-                      style={[
-                        styles.timePill,
-                        (state === "current" || isEditing) && { opacity: 1, borderColor: "rgba(120,160,255,0.6)" },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.timePillText,
-                          (state === "current" || isEditing) && { color: "#78a0ff" },
-                        ]}
-                      >
-                        {item.time}
-                      </Text>
-                    </View>
+                                         {isEditing ? (
+                       <TextInput
+                         value={editValue}
+                         onChangeText={setEditValue}
+                         onBlur={onCommitEdit}
+                         onSubmitEditing={onCommitEdit}
+                         returnKeyType="done"
+                         autoFocus
+                         style={styles.lyricInput}
+                       />
+                     ) : (
+                       <Text
+                         style={[
+                           styles.lyricText,
+                           state === "past" && { fontSize: 16, color: "#888" },
+                           state === "current" && { fontSize: 22, fontWeight: "500", color: "#fff", textShadowColor: "rgba(255,255,255,0.3)", textShadowRadius: 10 },
+                         ]}
+                       >
+                         {item.text}
+                       </Text>
+                     )}
                   </Pressable>
                 );
               }}
@@ -346,53 +330,32 @@ export default function PerformanceViewGlass() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    maxWidth: 375,
-    alignSelf: "center",
+    width: "100%",
   },
 
-  // Status Bar (faux)
-  statusBar: {
+  // Header with back button
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    backgroundColor: "rgba(26,26,28,0.2)",
   },
-  statusTime: { fontSize: 17, fontWeight: "600", color: "#fff" },
-  statusRight: { flexDirection: "row", alignItems: "center" },
-  signalBars: { flexDirection: "row", alignItems: "flex-end", gap: 2 as any },
-  signalBar: {
-    width: 3,
-    borderRadius: 1,
-    backgroundColor: "#fff",
-    shadowColor: "#fff",
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 0 },
-    opacity: 0.9,
-    marginHorizontal: 1,
-  },
-  battery: {
-    marginLeft: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: "rgba(90,90,92,0.9)",
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.12)",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
+    borderColor: "rgba(255,255,255,0.2)",
   },
-  batteryText: { color: "#fff", fontSize: 14, fontWeight: "600" },
 
   // Main container
   mainContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
 
@@ -535,9 +498,9 @@ const styles = StyleSheet.create({
   },
 
   lyricLine: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     maxWidth: 280,
     width: "100%",
     paddingVertical: 12,
@@ -584,27 +547,14 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  timePill: {
-    marginLeft: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "transparent",
-    opacity: 0, // visible for current/editing
-  },
-  timePillText: {
-    fontSize: 12,
-    color: "#666",
-  },
+
 
   // Bottom nav + home indicator
   bottomNav: {
     flexDirection: "row",
     justifyContent: "space-around",
     paddingTop: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   navBtn: { alignItems: "center", gap: 6 as any, padding: 8, borderRadius: 12 },

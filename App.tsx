@@ -126,7 +126,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         <AnimatedView 
           style={[
             {
-              backgroundColor: '#2A2A2A',
+              backgroundColor: '#0A0A0A',
               borderRadius: 12,
               padding: 16,
               shadowColor: '#000',
@@ -233,10 +233,19 @@ function AddSectionButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center bg-gray-700 px-4 py-3 rounded-lg mb-6"
+      className="flex-row items-center justify-center px-4 py-4 rounded-2xl mb-6"
+      style={{ 
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderStyle: 'dashed',
+        backgroundColor: 'rgba(255, 255, 255, 0.02)'
+      }}
+      accessible={true}
+      accessibilityLabel="Add section"
+      accessibilityRole="button"
     >
-      <Text className="text-gray-200 font-medium">add section</Text>
-      <Text className="text-gray-200 ml-2 text-lg">+</Text>
+      <Text className="text-gray-300 font-medium mr-3">add section</Text>
+      <Text className="text-gray-300 text-xl">+</Text>
     </Pressable>
   );
 }
@@ -330,7 +339,7 @@ function MainScreen() {
 
   return (
     <View className="flex-1" style={{ 
-      backgroundColor: '#1A1A1A',
+      backgroundColor: '#000000',
       paddingTop: insets.top + 20 
     }}>
       {/* Header with Controls */}
@@ -339,7 +348,11 @@ function MainScreen() {
           {/* Projects Menu Button */}
           <Pressable
             onPress={() => setShowProjectsSidebar(true)}
-            className="p-2"
+            className="w-12 h-12 rounded-lg items-center justify-center"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+            accessible={true}
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
           >
             <Ionicons name="menu" size={24} color="#9CA3AF" />
           </Pressable>
@@ -383,14 +396,18 @@ function MainScreen() {
                setShowSaveToast(true);
                setTimeout(() => setShowSaveToast(false), 2000);
              }}
-             className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+             className="px-4 py-2 rounded-lg flex-row items-center"
              style={{
-               shadowColor: '#2563EB',
+               backgroundColor: '#0084FF',
+               shadowColor: '#0084FF',
                shadowOffset: { width: 0, height: 2 },
-               shadowOpacity: 0.2,
-               shadowRadius: 4,
+               shadowOpacity: 0.3,
+               shadowRadius: 8,
                elevation: 4,
              }}
+             accessible={true}
+             accessibilityLabel="Save project"
+             accessibilityRole="button"
            >
              <Ionicons name="save" size={16} color="white" />
              <Text className="text-white font-medium ml-2 text-sm">save</Text>
@@ -399,7 +416,11 @@ function MainScreen() {
             {/* Performance View Toggle */}
             <Pressable
               onPress={() => togglePerformanceMode(true)}
-              className="p-2"
+              className="w-12 h-12 rounded-lg items-center justify-center"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+              accessible={true}
+              accessibilityLabel="Open performance mode"
+              accessibilityRole="button"
             >
               <Ionicons name="play" size={24} color="#9CA3AF" />
             </Pressable>
@@ -454,14 +475,18 @@ function MainScreen() {
           <View className="absolute bottom-4 left-0 right-0 items-center">
             <Pressable 
               onPress={openRecorder}
-              className="bg-red-500 w-16 h-16 rounded-full items-center justify-center"
+              className="w-16 h-16 rounded-full items-center justify-center"
               style={{
-                shadowColor: '#EF4444',
+                backgroundColor: '#0084FF',
+                shadowColor: '#0084FF',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
+                shadowOpacity: 0.4,
+                shadowRadius: 12,
                 elevation: 8,
               }}
+              accessible={true}
+              accessibilityLabel="Record"
+              accessibilityRole="button"
             >
               <Ionicons name="mic" size={24} color="white" />
             </Pressable>

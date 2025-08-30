@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, AccessibilityInfo, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export type MumbleRowProps = {
@@ -42,91 +42,126 @@ const formatWhen = (d: Date) => {
 
 export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggle, onDelete, currentTime, totalTime, isPlaying, onSeekBy }: MumbleRowProps) {
   return (
-    <View>
+    <View
+      accessible
+      accessibilityRole="listitem"
+      accessibilityLabel={r.name || "New Recording"}
+      accessibilityState={{ expanded: isSelected }}
+      style={{
+        borderRadius: 20,
+        overflow: "hidden",
+        marginVertical: 6,
+        backgroundColor: isSelected ? "#18181B" : "#111113",
+        borderWidth: 1,
+        borderColor: isSelected ? "#3B82F6" : "#232326",
+        shadowColor: isSelected ? "#3B82F6" : undefined,
+        shadowOpacity: isSelected ? 0.15 : 0,
+        shadowRadius: isSelected ? 8 : 0,
+      }}
+    >
       {/* List row */}
       <Pressable
         onPress={onSelect}
+        accessibilityRole="button"
+        accessibilityLabel={`Select take: ${r.name || "New Recording"}`}
+        accessibilityState={{ selected: isSelected }}
         className="flex-row items-center justify-between px-4"
-        style={{ height: 64, borderBottomWidth: 1, borderBottomColor: "#2C2C2E" }}
+        style={{ height: 72 }}
+        android_ripple={{ color: "#232326" }}
       >
         <View className="flex-1 pr-3">
-          <Text className="text-white" style={{ fontSize: 17, fontWeight: "600" }} numberOfLines={1}>
+          <Text className="text-white" style={{ fontSize: 18, fontWeight: "700" }} numberOfLines={1}>
             {r.name || "New Recording"}
           </Text>
           <Text style={{ color: "#9DA3AF", fontSize: 13, marginTop: 2 }}>
             {formatWhen(r.createdAt as any)}
           </Text>
         </View>
-
         <Text style={{ color: "#9DA3AF", fontSize: 13, marginRight: 6 }}>
           {formatClock(Math.floor(r.duration || 0))}
         </Text>
-
-        <Pressable onPress={onEllipsis} className="w-8 h-8 rounded-full items-center justify-center">
-          <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
+        <Pressable
+          onPress={onEllipsis}
+          accessibilityRole="button"
+          accessibilityLabel={`More options for ${r.name || "New Recording"}`}
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ marginLeft: 2 }}
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#9CA3AF" />
         </Pressable>
       </Pressable>
-
       {/* Expanded player under the selected row */}
       {isSelected && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: "#0C0C0C" }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: "#18181B" }}>
           {/* Scrubber */}
           <Pressable
             onPress={(e) => {
-              const w = (e.nativeEvent as any).source?.width ?? 1;
-              const x = (e.nativeEvent as any).locationX ?? 0;
-              const ratio = Math.max(0, Math.min(1, x / Math.max(1, w)));
-              // An actual seek gesture can be wired by caller if desired
+              // TODO: Implement seek logic if needed
             }}
             className="h-6 justify-center"
+            accessibilityRole="adjustable"
+            accessibilityLabel="Playback position"
+            accessibilityValue={{ min: 0, max: totalTime, now: currentTime }}
+            style={{ marginBottom: 12 }}
           >
-            <View className="h-1 rounded-full" style={{ backgroundColor: "#2C2C2E" }}>
+            <View
+              className="h-1 rounded-full"
+              style={{ backgroundColor: "#232326" }}
+              accessibilityRole="progressbar"
+              accessibilityLabel="Playback progress"
+              accessibilityValue={{ min: 0, max: totalTime, now: currentTime }}
+            >
               <View
                 className="h-1 rounded-full"
                 style={{
                   width: `${totalTime ? (currentTime / totalTime) * 100 : 0}%`,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "#3B82F6",
+                  boxShadow: Platform.OS === "web" ? "0 0 8px rgba(0,132,255,.3)" : undefined,
                 }}
               />
             </View>
-            <View className="flex-row justify-between mt-4">
+            <View className="flex-row justify-between mt-2" accessibilityLiveRegion="polite">
               <Text style={{ color: "#9DA3AF", fontSize: 12 }}>{formatClock(currentTime)}</Text>
               <Text style={{ color: "#9DA3AF", fontSize: 12 }}>{formatRemaining(currentTime, totalTime)}</Text>
             </View>
           </Pressable>
-
           {/* Controls */}
-          <View className="flex-row items-center justify-between mt-10">
+          <View className="flex-row items-center justify-between mt-6">
             <Pressable
               onPress={() => onSeekBy?.(-15)}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#1C1C1E" }}
+              accessibilityRole="button"
+              accessibilityLabel="Seek backward 15 seconds"
               className="items-center justify-center"
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
             >
-              <Ionicons name="play-back" size={18} color="#E5E7EB" />
+              <Ionicons name="play-back" size={22} color="#E5E7EB" />
             </Pressable>
-
             <Pressable
               onPress={onToggle}
-              style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#FFFFFF" }}
+              accessibilityRole="button"
+              accessibilityLabel={isPlaying ? "Pause" : "Play"}
               className="items-center justify-center"
+              style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#FFFFFF" }}
             >
-              <Ionicons name={isPlaying ? "pause" : "play"} size={22} color="#111827" />
+              <Ionicons name={isPlaying ? "pause" : "play"} size={28} color="#111827" />
             </Pressable>
-
             <Pressable
               onPress={() => onSeekBy?.(15)}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#1C1C1E" }}
+              accessibilityRole="button"
+              accessibilityLabel="Seek forward 15 seconds"
               className="items-center justify-center"
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
             >
-              <Ionicons name="play-forward" size={18} color="#E5E7EB" />
+              <Ionicons name="play-forward" size={22} color="#E5E7EB" />
             </Pressable>
-
             <Pressable
               onPress={onDelete}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "#1C1C1E" }}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete take: ${r.name || "New Recording"}`}
               className="items-center justify-center"
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
             >
-              <Ionicons name="trash" size={18} color="#3B82F6" />
+              <Ionicons name="trash" size={22} color="#EF4444" />
             </Pressable>
           </View>
         </View>

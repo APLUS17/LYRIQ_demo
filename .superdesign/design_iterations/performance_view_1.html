@@ -1,226 +1,173 @@
+<!-- LYRIQ Performance — surgical fixes: focus, button types, Tailwind size nits, reduced-motion -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LYRIQ - Performance Mode</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="lyriq_dark_theme.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            background: linear-gradient(180deg, #1a1a1c 0%, #0d0d0e 50%, #000000 100%) !important;
-            font-family: var(--font-body) !important;
-            margin: 0;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        
-        .glass-card {
-            background: var(--glass-background);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            box-shadow: var(--shadow-large), var(--shadow-glow);
-        }
-        
-        .waveform-bar {
-            background: rgba(200,200,205,0.4);
-            transition: all 100ms ease-out;
-        }
-        
-        .waveform-bar.active {
-            background: linear-gradient(180deg, var(--accent-blue) 0%, #00C6FF 100%);
-            box-shadow: 0 0 8px rgba(0, 132, 255, 0.5);
-        }
-        
-        .lyric-line {
-            transition: all 400ms ease-out;
-            font-family: Georgia, serif !important;
-        }
-        
-        .lyric-line.current {
-            background: rgba(255, 255, 255, 0.10);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-        }
-        
-        .lyric-line.past {
-            opacity: 0.4;
-            font-size: 16px;
-        }
-        
-        .lyric-line.future {
-            opacity: 0.6;
-        }
-        
-        .control-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all var(--timing-fast) var(--ease-smooth);
-        }
-        
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
-        }
-        
-        .play-btn {
-            background: white;
-            transition: all var(--timing-fast) var(--ease-spring);
-        }
-        
-        .play-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .drag-handle {
-            cursor: grab;
-        }
-        
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LYRIQ - Performance Mode</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="lyriq_dark_theme.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    body{
+      background:linear-gradient(180deg,#1a1a1c 0%,#0d0d0e 50%,#000 100%) !important;
+      font-family:var(--font-body) !important;
+      margin:0;min-height:100vh;overflow-x:hidden;
+    }
+    .glass-card{background:var(--glass-background);border:1px solid var(--glass-border);
+      backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+      box-shadow:var(--shadow-large),var(--shadow-glow);}
+    .waveform-bar{background:rgba(200,200,205,.4);transition:all 100ms ease-out;}
+    .waveform-bar.active{background:linear-gradient(180deg,var(--accent-blue) 0%,#00C6FF 100%);box-shadow:0 0 8px rgba(0,132,255,.5);}
+    .lyric-line{transition:all 400ms ease-out;font-family:Georgia,serif !important;}
+    .lyric-line.current{background:rgba(255,255,255,.10);box-shadow:0 0 20px rgba(255,255,255,.15);text-shadow:0 0 10px rgba(255,255,255,.3);}
+    .lyric-line.past{opacity:.4;font-size:16px;}
+    .lyric-line.future{opacity:.6;}
+    .control-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+      transition:all var(--timing-fast) var(--ease-smooth);}
+    .control-btn:hover{background:rgba(255,255,255,.1);transform:scale(1.05);}
+    .play-btn{background:white;transition:all var(--timing-fast) var(--ease-spring);}
+    .play-btn:hover{transform:scale(1.1);box-shadow:0 8px 20px rgba(0,0,0,.3);}
+    .drag-handle{cursor:grab;}
+    .drag-handle:active{cursor:grabbing;}
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce){
+      .control-btn:hover,.play-btn:hover{transform:none !important;}
+      .lyric-line{transition:none !important;}
+    }
+  </style>
 </head>
 <body class="min-h-screen text-white">
-    
-    <!-- Header -->
-    <div class="flex items-center px-4 py-6">
-        <button class="w-10 h-10 rounded-full bg-white bg-opacity-10 border border-white border-opacity-20 flex items-center justify-center hover:bg-opacity-20 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
+  <!-- Header -->
+  <header class="flex items-center px-4 py-6">
+    <button type="button"
+      class="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      <span class="sr-only">Back</span>
+    </button>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 px-4 pb-6">
+    <!-- Player -->
+    <section class="glass-card rounded-3xl p-8 mb-4" aria-label="Audio player">
+      <div class="text-center mb-12">
+        <h2 class="text-4xl font-extralight text-white tracking-wide mb-2">Midnight Dreams</h2>
+        <p class="text-gray-400 text-lg">Alex Rivera • Demo</p>
+      </div>
+
+      <!-- Waveform (static mock) -->
+      <div class="flex items-end justify-center space-x-1 mb-8 h-16" aria-hidden="true">
+        <div class="waveform-bar active w-1 h-2 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-4 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-3 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-6 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-8 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-5 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-7 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-9 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-4 rounded-full"></div>
+        <div class="waveform-bar active w-1 h-6 rounded-full"></div>
+        <div class="waveform-bar w-1 h-10 rounded-full"></div>
+        <div class="waveform-bar w-1 h-7 rounded-full"></div>
+        <div class="waveform-bar w-1 h-3 rounded-full"></div>
+        <div class="waveform-bar w-1 h-8 rounded-full"></div>
+        <div class="waveform-bar w-1 h-10 rounded-full"></div>
+        <div class="waveform-bar w-1 h-4 rounded-full"></div>
+        <div class="waveform-bar w-1 h-6 rounded-full"></div>
+        <div class="waveform-bar w-1 h-9 rounded-full"></div>
+        <div class="waveform-bar w-1 h-11 rounded-full"></div>
+        <div class="waveform-bar w-1 h-7 rounded-full"></div>
+        <div class="waveform-bar w-1 h-5 rounded-full"></div>
+        <div class="waveform-bar w-1 h-8 rounded-full"></div>
+        <div class="waveform-bar w-1 h-4 rounded-full"></div>
+        <div class="waveform-bar w-1 h-7 rounded-full"></div>
+        <div class="waveform-bar w-1 h-9 rounded-full"></div>
+        <div class="waveform-bar w-1 h-6 rounded-full"></div>
+        <div class="waveform-bar w-1 h-11 rounded-full"></div>
+        <div class="waveform-bar w-1 h-8 rounded-full"></div>
+        <div class="waveform-bar w-1 h-4 rounded-full"></div>
+        <div class="waveform-bar w-1 h-10 rounded-full"></div>
+        <div class="waveform-bar w-1 h-6 rounded-full"></div>
+        <div class="waveform-bar w-1 h-3 rounded-full"></div>
+      </div>
+
+      <!-- Time -->
+      <p class="text-center text-gray-400 text-lg font-medium tracking-wide mb-6" aria-live="polite">1:05 / 2:34</p>
+
+      <!-- Controls -->
+      <div class="flex items-center justify-center space-x-10">
+        <button type="button" class="control-btn w-12 h-12 rounded-full flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]" aria-label="Previous">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/>
+          </svg>
         </button>
+
+        <button type="button" class="play-btn w-[4.5rem] h-[4.5rem] rounded-full grid place-items-center text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]" aria-label="Play">
+          <svg class="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+
+        <button type="button" class="control-btn w-12 h-12 rounded-full flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]" aria-label="Next">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- Drag handle -->
+    <div class="drag-handle flex justify-center py-3" aria-hidden="true">
+      <div class="w-9 h-1 rounded-full bg-white/35"></div>
     </div>
 
-    <!-- Main Container -->
-    <div class="flex-1 px-4 pb-6">
-        
-        <!-- Audio Player Card -->
-        <div class="glass-card rounded-3xl p-8 mb-4">
-            <!-- Track Info -->
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-extralight text-white tracking-wide mb-2">Midnight Dreams</h2>
-                <p class="text-gray-400 text-lg">Alex Rivera • Demo</p>
-            </div>
-            
-            <!-- Waveform -->
-            <div class="flex items-center justify-center space-x-1 mb-8 h-16">
-                <div class="waveform-bar active w-1 h-2 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-4 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-3 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-6 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-8 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-5 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-7 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-9 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-4 rounded-full"></div>
-                <div class="waveform-bar active w-1 h-6 rounded-full"></div>
-                <div class="waveform-bar w-1 h-10 rounded-full"></div>
-                <div class="waveform-bar w-1 h-7 rounded-full"></div>
-                <div class="waveform-bar w-1 h-3 rounded-full"></div>
-                <div class="waveform-bar w-1 h-8 rounded-full"></div>
-                <div class="waveform-bar w-1 h-10 rounded-full"></div>
-                <div class="waveform-bar w-1 h-4 rounded-full"></div>
-                <div class="waveform-bar w-1 h-6 rounded-full"></div>
-                <div class="waveform-bar w-1 h-9 rounded-full"></div>
-                <div class="waveform-bar w-1 h-11 rounded-full"></div>
-                <div class="waveform-bar w-1 h-7 rounded-full"></div>
-                <div class="waveform-bar w-1 h-5 rounded-full"></div>
-                <div class="waveform-bar w-1 h-8 rounded-full"></div>
-                <div class="waveform-bar w-1 h-4 rounded-full"></div>
-                <div class="waveform-bar w-1 h-7 rounded-full"></div>
-                <div class="waveform-bar w-1 h-9 rounded-full"></div>
-                <div class="waveform-bar w-1 h-6 rounded-full"></div>
-                <div class="waveform-bar w-1 h-11 rounded-full"></div>
-                <div class="waveform-bar w-1 h-8 rounded-full"></div>
-                <div class="waveform-bar w-1 h-4 rounded-full"></div>
-                <div class="waveform-bar w-1 h-10 rounded-full"></div>
-                <div class="waveform-bar w-1 h-6 rounded-full"></div>
-                <div class="waveform-bar w-1 h-3 rounded-full"></div>
-            </div>
-            
-            <!-- Time Display -->
-            <p class="text-center text-gray-400 text-lg font-medium tracking-wide mb-6">1:05 / 2:34</p>
-            
-            <!-- Controls -->
-            <div class="flex items-center justify-center space-x-10">
-                <button class="control-btn w-12 h-12 rounded-full flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/>
-                    </svg>
-                </button>
-                
-                <button class="play-btn w-18 h-18 rounded-full flex items-center justify-center text-black">
-                    <svg class="w-7 h-7 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                    </svg>
-                </button>
-                
-                <button class="control-btn w-12 h-12 rounded-full flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z"/>
-                    </svg>
-                </button>
-            </div>
+    <!-- Lyrics -->
+    <section class="glass-card rounded-3xl p-8 h-96 overflow-hidden" aria-label="Lyrics">
+      <div class="flex flex-col items-center justify-center h-full space-y-6">
+        <div class="lyric-line past text-center px-4 py-3 rounded-lg max-w-xs">
+          <p class="text-gray-500">I've been thinking 'bout the way you smile</p>
         </div>
-        
-        <!-- Drag Handle -->
-        <div class="drag-handle flex justify-center py-3">
-            <div class="w-9 h-1 rounded-full bg-white bg-opacity-35"></div>
+        <div class="lyric-line past text-center px-4 py-3 rounded-lg max-w-xs">
+          <p class="text-gray-500">When you think nobody's watching</p>
         </div>
-        
-        <!-- Lyrics Card -->
-        <div class="glass-card rounded-3xl p-8 h-96 overflow-hidden">
-            <div class="flex flex-col items-center justify-center h-full space-y-6">
-                
-                <div class="lyric-line past text-center px-4 py-3 rounded-lg max-w-xs">
-                    <p class="text-gray-500">I've been thinking 'bout the way you smile</p>
-                </div>
-                
-                <div class="lyric-line past text-center px-4 py-3 rounded-lg max-w-xs">
-                    <p class="text-gray-500">When you think nobody's watching</p>
-                </div>
-                
-                <div class="lyric-line current text-center px-4 py-3 rounded-lg max-w-xs">
-                    <p class="text-white text-xl font-medium">Got me feeling like a child</p>
-                </div>
-                
-                <div class="lyric-line future text-center px-4 py-3 rounded-lg max-w-xs">
-                    <p class="text-gray-300">With a secret worth protecting</p>
-                </div>
-                
-                <div class="lyric-line future text-center px-4 py-3 rounded-lg max-w-xs">
-                    <p class="text-gray-300">And I just can't get you outta my head</p>
-                </div>
-                
-            </div>
+        <div class="lyric-line current text-center px-4 py-3 rounded-lg max-w-xs">
+          <p class="text-white text-xl font-medium">Got me feeling like a child</p>
         </div>
-    </div>
-    
-    <!-- Bottom Navigation -->
-    <div class="flex justify-around px-4 py-6 bg-black bg-opacity-30">
-        <button class="flex flex-col items-center space-y-1 p-2 rounded-xl">
-            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <span class="text-xs text-gray-500 font-medium">notes</span>
-        </button>
-        
-        <button class="flex flex-col items-center space-y-1 p-2 rounded-xl">
-            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-            </svg>
-            <span class="text-xs text-gray-500 font-medium">edit</span>
-        </button>
-    </div>
-    
-    <!-- Home Indicator -->
-    <div class="w-32 h-1 bg-white bg-opacity-55 rounded-full mx-auto mb-2"></div>
+        <div class="lyric-line future text-center px-4 py-3 rounded-lg max-w-xs">
+          <p class="text-gray-300">With a secret worth protecting</p>
+        </div>
+        <div class="lyric-line future text-center px-4 py-3 rounded-lg max-w-xs">
+          <p class="text-gray-300">And I just can't get you outta my head</p>
+        </div>
+      </div>
+    </section>
+  </main>
 
+  <!-- Bottom Nav -->
+  <nav class="flex justify-around px-4 py-6 bg-black/30" aria-label="Performance actions">
+    <button type="button" class="flex flex-col items-center space-y-1 p-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]">
+      <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <span class="text-xs text-gray-500 font-medium">notes</span>
+    </button>
+
+    <button type="button" class="flex flex-col items-center space-y-1 p-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[--accent-blue]">
+      <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+      </svg>
+      <span class="text-xs text-gray-500 font-medium">edit</span>
+    </button>
+  </nav>
+
+  <!-- Home indicator -->
+  <div class="w-32 h-1 bg-white/55 rounded-full mx-auto mb-2" aria-hidden="true"></div>
 </body>
 </html>

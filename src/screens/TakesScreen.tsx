@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, Modal, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, Modal, TextInput, Alert, Platform, AccessibilityInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -96,18 +96,20 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
   ), [validRecordings]);
 
   return (
-    <View className="flex-1 bg-gray-900" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-black" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center px-4 pt-4 pb-6">
-        <Pressable onPress={onBack} className="w-10 h-10 rounded-full items-center justify-center mr-2" style={{ backgroundColor: "#1F2937" }}>
+      <View className="flex-row items-center px-6 pt-6 pb-6">
+        <Pressable
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          className="w-12 h-12 rounded-full items-center justify-center mr-4"
+          style={{ backgroundColor: "#232326" }}
+        >
           <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
         </Pressable>
-        <Text className="text-4xl font-bold text-white" style={{ fontSize: 34, fontWeight: "700", flex: 1 }}>MUMBLs</Text>
-        <View className="w-10 h-10 bg-gray-600 rounded-full items-center justify-center">
-          <Text className="text-white font-bold text-sm">A</Text>
-        </View>
+        <Text className="text-3xl font-bold text-white" style={{ flex: 1, fontSize: 28 }}>All MUMBLs</Text>
       </View>
-
       {/* Content */}
       {items.length === 0 ? (
         <View className="items-center py-20 px-6">
@@ -117,7 +119,7 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
         </View>
       ) : (
         <ScrollView style={{ borderRadius: 16, overflow: "hidden", backgroundColor: "#0B0B0B", marginHorizontal: 12 }}>
-          {items.map((r) => (
+          {items.map((r, idx) => (
             <MumbleRow
               key={r.id}
               r={r}
@@ -135,7 +137,6 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
           <View style={{ height: 120 }} />
         </ScrollView>
       )}
-
       {/* Actions Sheet */}
       <Modal visible={actionsId != null} transparent animationType="fade" onRequestClose={() => setActionsId(null)}>
         <Pressable className="flex-1 bg-black/40" onPress={() => setActionsId(null)} />
@@ -166,6 +167,19 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
           </View>
         </View>
       </Modal>
+      {/* Record New Button */}
+      <View style={{ position: "absolute", bottom: 32, left: 0, right: 0, alignItems: "center", pointerEvents: "box-none" }} pointerEvents="box-none">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Record new take"
+          className="flex-row items-center gap-3 px-8 py-4 rounded-2xl"
+          style={{ backgroundColor: "#3B82F6", shadowColor: "#3B82F6", shadowOpacity: 0.3, shadowRadius: 12 }}
+          onPress={() => Alert.alert("Record New", "Recording new take (not implemented)")}
+        >
+          <Ionicons name="mic-outline" size={24} color="#FFF" />
+          <Text className="text-white font-semibold text-lg">Record New</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

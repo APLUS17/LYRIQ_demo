@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LYRIQ - Projects Sidebar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="lyriq_dark_theme.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background: rgba(0, 0, 0, 0.8) !important; 
+            font-family: var(--font-body) !important;
+            margin: 0;
+            overflow-x: hidden;
+            backdrop-filter: blur(4px);
+        }
+        
+        .sidebar {
+            background: #171717;
+            border-right: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-large);
+            animation: slideIn 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .search-input {
+            background: var(--surface-secondary);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .search-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+            outline: none;
+        }
+        
+        .nav-item {
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .nav-item:hover {
+            background: var(--interactive-hover);
+            transform: translateX(4px);
+        }
+        
+        .project-item {
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .project-item:hover {
+            background: var(--interactive-hover);
+            transform: translateX(2px);
+        }
+        
+        .project-item.active {
+            background: var(--surface-secondary);
+            border-left: 3px solid var(--accent-blue);
+            padding-left: 9px;
+        }
+        
+        .create-btn {
+            border: 1px solid var(--border-medium);
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .create-btn:hover {
+            border-color: var(--accent-blue);
+            background: var(--interactive-hover);
+        }
+        
+        .user-profile {
+            border-top: 1px solid var(--border-subtle);
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .user-profile:hover {
+            background: var(--interactive-hover);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white font-sans">
+    
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar fixed left-0 top-0 bottom-0 w-64 z-50">
+        
+        <!-- Header -->
+        <div class="px-4 py-6 border-b border-gray-800">
+            <h1 class="text-white text-xl font-bold tracking-wide">LYRIQ</h1>
+        </div>
+        
+        <!-- Search & Create -->
+        <div class="px-3 py-4">
+            <div class="flex items-center space-x-2">
+                <div class="relative flex-1">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" placeholder="Search" class="search-input w-full pl-10 pr-4 py-3 rounded-xl text-white text-sm">
+                </div>
+                <button class="create-btn w-11 h-11 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="px-3 pb-4 space-y-1">
+            <button class="nav-item w-full flex items-center p-3 rounded-lg text-left">
+                <svg class="w-4 h-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"/>
+                </svg>
+                <span class="text-gray-200 text-sm">Explore LYRIQs</span>
+            </button>
+            
+            <button class="nav-item w-full flex items-center p-3 rounded-lg text-left">
+                <svg class="w-4 h-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+                <span class="text-gray-200 text-sm">All MUMBLs</span>
+            </button>
+        </div>
+        
+        <!-- Projects List -->
+        <div class="px-3 space-y-1">
+            <button class="project-item active w-full p-3 rounded-lg text-left">
+                <div class="flex-1">
+                    <h4 class="text-gray-200 text-sm font-medium">Midnight Dreams</h4>
+                    <p class="text-gray-500 text-xs mt-1">Words flow like rivers through my restless mind...</p>
+                </div>
+            </button>
+            
+            <button class="project-item w-full p-3 rounded-lg text-left">
+                <div class="flex-1">
+                    <h4 class="text-gray-200 text-sm font-medium">Summer Nights</h4>
+                    <p class="text-gray-500 text-xs mt-1">Dancing under stars, feeling infinite...</p>
+                </div>
+            </button>
+            
+            <button class="project-item w-full p-3 rounded-lg text-left">
+                <div class="flex-1">
+                    <h4 class="text-gray-200 text-sm font-medium">City Lights</h4>
+                    <p class="text-gray-500 text-xs mt-1">Neon reflections on wet pavement...</p>
+                </div>
+            </button>
+            
+            <button class="project-item w-full p-3 rounded-lg text-left">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <h4 class="text-gray-200 text-sm font-medium">Ocean Waves</h4>
+                        <p class="text-gray-500 text-xs mt-1">Salt air and endless horizons...</p>
+                    </div>
+                    <div class="flex items-center px-2 py-1 rounded-full bg-gray-700">
+                        <svg class="w-3 h-3 text-amber-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span class="text-gray-300 text-xs">2</span>
+                    </div>
+                </div>
+            </button>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="user-profile absolute bottom-0 left-0 right-0 px-3 pb-2">
+            <button class="w-full flex items-center p-3 rounded-lg mt-2">
+                <div class="w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                    <span class="text-white font-bold text-xs">A</span>
+                </div>
+                <span class="text-gray-200 text-sm flex-1 text-left">ayo omoloja</span>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
+                </svg>
+            </button>
+        </div>
+        
+    </div>
+
+</body>
+</html>

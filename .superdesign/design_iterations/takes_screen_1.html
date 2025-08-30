@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LYRIQ - Takes Screen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="lyriq_dark_theme.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background: var(--background) !important; 
+            font-family: var(--font-body) !important;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .audio-item {
+            background: var(--surface-primary);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--timing-normal) var(--ease-smooth);
+        }
+        
+        .audio-item:hover {
+            background: var(--surface-secondary);
+            border-color: var(--border-medium);
+        }
+        
+        .audio-item.expanded {
+            background: var(--surface-secondary);
+            border-color: var(--border-medium);
+        }
+        
+        .scrubber-track {
+            background: var(--surface-tertiary);
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .scrubber-progress {
+            background: var(--accent-blue);
+            box-shadow: 0 0 8px rgba(0, 132, 255, 0.3);
+        }
+        
+        .control-button {
+            background: var(--surface-tertiary);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--timing-fast) var(--ease-smooth);
+        }
+        
+        .control-button:hover {
+            background: var(--surface-secondary);
+            transform: scale(1.05);
+        }
+        
+        .play-button {
+            background: var(--text-primary);
+            transition: all var(--timing-fast) var(--ease-spring);
+        }
+        
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .record-new-btn {
+            background: var(--accent-blue);
+            transition: all var(--timing-normal) var(--ease-spring);
+        }
+        
+        .record-new-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .spring-in {
+            animation: springIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes springIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="min-h-screen bg-black text-white font-sans">
+    
+    <!-- Header -->
+    <div class="flex items-center px-6 py-6">
+        <button class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-4 hover:bg-gray-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="lyriq-text-header">All MUMBLs</h1>
+    </div>
+
+    <!-- Audio List -->
+    <div class="px-6 space-y-3">
+        
+        <!-- Audio Item 1 (Expanded) -->
+        <div class="audio-item expanded rounded-2xl overflow-hidden spring-in">
+            <!-- List Row -->
+            <div class="flex items-center justify-between p-4">
+                <div class="flex-1 pr-4">
+                    <h3 class="text-white text-lg font-semibold">Demo Take 1</h3>
+                    <p class="text-gray-400 text-sm mt-1">2:34 • Today 3:45 PM</p>
+                </div>
+                <button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Expanded Player Controls -->
+            <div class="px-4 pb-4 bg-black bg-opacity-20">
+                <!-- Scrubber -->
+                <div class="mb-6">
+                    <div class="scrubber-track h-1 rounded-full relative cursor-pointer">
+                        <div class="scrubber-progress h-full rounded-full w-2/5"></div>
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <span class="text-gray-400 text-xs font-mono">1:05</span>
+                        <span class="text-gray-400 text-xs font-mono">-1:29</span>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="flex items-center justify-between">
+                    <button class="control-button w-11 h-11 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="play-button w-14 h-14 rounded-full flex items-center justify-center text-black">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-button w-11 h-11 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-button w-11 h-11 rounded-full flex items-center justify-center text-red-400 hover:text-red-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Audio Item 2 (Collapsed) -->
+        <div class="audio-item rounded-2xl p-4 spring-in stagger-1">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 pr-4">
+                    <h3 class="text-white text-lg font-semibold">Verse Idea</h3>
+                    <p class="text-gray-400 text-sm mt-1">1:45 • Yesterday 8:22 PM</p>
+                </div>
+                <button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Audio Item 3 (Collapsed) -->
+        <div class="audio-item rounded-2xl p-4 spring-in stagger-2">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 pr-4">
+                    <h3 class="text-white text-lg font-semibold">Hook Concept</h3>
+                    <p class="text-gray-400 text-sm mt-1">0:58 • Tuesday 2:15 PM</p>
+                </div>
+                <button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Audio Item 4 (Collapsed) -->
+        <div class="audio-item rounded-2xl p-4 spring-in stagger-3">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 pr-4">
+                    <h3 class="text-white text-lg font-semibold">Bridge Melody</h3>
+                    <p class="text-gray-400 text-sm mt-1">3:12 • Monday 11:30 AM</p>
+                </div>
+                <button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Record New Button -->
+    <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2">
+        <button class="record-new-btn px-8 py-4 rounded-2xl text-white font-semibold text-lg flex items-center space-x-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+            </svg>
+            <span>Record New</span>
+        </button>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LYRIQ - Ideas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="lyriq_dark_theme.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background: var(--background) !important; 
+            font-family: var(--font-body) !important;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .tab-button {
+            transition: all var(--timing-normal) var(--ease-smooth);
+            border: 2px solid var(--border-medium);
+        }
+        
+        .tab-button.active {
+            border-color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .tab-button:not(.active):hover {
+            border-color: var(--border-strong);
+            background: var(--interactive-hover);
+        }
+        
+        .idea-card {
+            background: linear-gradient(135deg, var(--surface-secondary) 0%, var(--surface-primary) 100%);
+            border: 1px solid var(--border-subtle);
+            transition: all var(--timing-normal) var(--ease-smooth);
+        }
+        
+        .idea-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: var(--shadow-large);
+            border-color: var(--border-medium);
+        }
+        
+        .new-idea-btn {
+            border: 2px dashed var(--border-medium);
+            transition: all var(--timing-normal) var(--ease-smooth);
+        }
+        
+        .new-idea-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(0, 132, 255, 0.05);
+        }
+        
+        .spring-in {
+            animation: springIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes springIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-black text-white font-sans">
+    
+    <!-- Header -->
+    <div class="flex items-center px-6 py-6">
+        <button class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center mr-4 hover:bg-gray-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <h1 class="lyriq-text-header flex-1">Ideas</h1>
+        <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+            <span class="text-white font-bold text-sm">A</span>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex justify-center px-6 mb-8 space-x-4">
+        <button class="tab-button active flex-1 max-w-24 h-16 rounded-2xl flex flex-col items-center justify-center">
+            <div class="w-6 h-6 mb-1">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium">LYRIQS</span>
+        </button>
+        
+        <button class="tab-button flex-1 max-w-24 h-16 rounded-2xl flex flex-col items-center justify-center">
+            <div class="w-6 h-6 mb-1">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-400">VERSES</span>
+        </button>
+        
+        <button class="tab-button flex-1 max-w-24 h-16 rounded-2xl flex flex-col items-center justify-center">
+            <div class="w-6 h-6 mb-1">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+            </div>
+            <span class="text-xs font-medium text-gray-400">MUMBLs</span>
+        </button>
+    </div>
+
+    <!-- Featured Idea Card -->
+    <div class="px-6 mb-8">
+        <div class="idea-card rounded-3xl p-8 max-w-md mx-auto spring-in">
+            <h3 class="text-xl font-semibold text-white mb-4">Past vs Future Self</h3>
+            <p class="text-gray-300 text-base leading-relaxed mb-6">
+                A conversation between past and future you.
+                <br><br>
+                • Split-screen concept<br>
+                • Emotional contrast<br>
+                • Hook: "We made it..."
+            </p>
+            
+            <!-- Action Buttons -->
+            <div class="flex space-x-3">
+                <button class="lyriq-button-primary px-4 py-2 text-sm font-medium rounded-lg">
+                    Edit
+                </button>
+                <button class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors">
+                    Use
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Idea Button -->
+    <div class="px-6">
+        <button class="new-idea-btn w-full py-6 rounded-2xl flex items-center justify-center space-x-3">
+            <span class="text-gray-300 font-medium">New Idea</span>
+            <span class="text-gray-300 text-xl">+</span>
+        </button>
+    </div>
+
+</body>
+</html>

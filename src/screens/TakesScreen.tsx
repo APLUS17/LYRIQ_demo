@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Modal, TextInput, Alert, Platform, A
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import * as Haptics from 'expo-haptics';
 import { useLyricStore } from "../state/lyricStore";
 import type { Recording } from "../state/lyricStore";
 import MumbleRow from "../components/MumbleRow";
@@ -100,15 +101,18 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
       {/* Header */}
       <View className="flex-row items-center px-6 pt-6 pb-6">
         <Pressable
-          onPress={onBack}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onBack();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Back"
           className="w-12 h-12 rounded-full items-center justify-center mr-4"
-          style={{ backgroundColor: "#232326" }}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
         >
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
         </Pressable>
-        <Text className="text-3xl font-bold text-white" style={{ flex: 1, fontSize: 28 }}>All MUMBLs</Text>
+        <Text className="text-4xl font-light text-white tracking-wide" style={{ flex: 1 }}>All MUMBLs</Text>
       </View>
       {/* Content */}
       {items.length === 0 ? (
@@ -118,50 +122,161 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
           <Text className="text-gray-500 text-sm mt-1 text-center">Record your first MUMBL from the editor</Text>
         </View>
       ) : (
-        <ScrollView style={{ borderRadius: 16, overflow: "hidden", backgroundColor: "#0B0B0B", marginHorizontal: 12 }}>
+        <ScrollView 
+          className="px-6" 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
           {items.map((r, idx) => (
-            <MumbleRow
+            <View 
               key={r.id}
-              r={r}
-              isSelected={selectedId === r.id}
-              onSelect={() => setSelectedId(r.id)}
-              onEllipsis={() => { setSelectedId(r.id); setActionsId(r.id); setRenameInput(r.name); }}
-              onToggle={togglePlayPause}
-              onDelete={() => removeRecording(r.id)}
-              currentTime={selectedId === r.id ? currentTime : 0}
-              totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
-              isPlaying={selectedId === r.id ? isPlaying : false}
-              onSeekBy={seekBy}
-            />
+              style={{
+                backgroundColor: '#0A0A0A',
+                borderRadius: 16,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                overflow: 'hidden'
+              }}
+            >
+              <MumbleRow
+                r={r}
+                isSelected={selectedId === r.id}
+                onSelect={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedId(r.id);
+                }}
+                onEllipsis={() => { 
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedId(r.id); 
+                  setActionsId(r.id); 
+                  setRenameInput(r.name); 
+                }}
+                onToggle={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  togglePlayPause();
+                }}
+                onDelete={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                  removeRecording(r.id);
+                }}
+                currentTime={selectedId === r.id ? currentTime : 0}
+                totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
+                isPlaying={selectedId === r.id ? isPlaying : false}
+                onSeekBy={seekBy}
+              />
+            </View>
           ))}
           <View style={{ height: 120 }} />
         </ScrollView>
       )}
       {/* Actions Sheet */}
       <Modal visible={actionsId != null} transparent animationType="fade" onRequestClose={() => setActionsId(null)}>
-        <Pressable className="flex-1 bg-black/40" onPress={() => setActionsId(null)} />
-        <View className="absolute left-0 right-0 bottom-0 bg-gray-900 rounded-t-3xl p-4">
-          <Pressable onPress={() => { setRenameVisible(true); }} className="p-4 rounded-2xl bg-gray-800 mb-2">
-            <Text className="text-white text-center">Rename</Text>
+        <Pressable className="flex-1 bg-black/80" onPress={() => setActionsId(null)} />
+        <View style={{ 
+          position: 'absolute', 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          backgroundColor: '#0A0A0A', 
+          borderTopLeftRadius: 24, 
+          borderTopRightRadius: 24, 
+          padding: 16,
+          borderTopWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.1)'
+        }}>
+          <Pressable 
+            onPress={() => { 
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setRenameVisible(true); 
+            }} 
+            style={{ 
+              padding: 16, 
+              borderRadius: 16, 
+              backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+              marginBottom: 8,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)'
+            }}
+            accessible={true}
+            accessibilityLabel="Rename recording"
+            accessibilityRole="button"
+          >
+            <Text className="text-white text-center font-medium">Rename</Text>
           </Pressable>
-          <Pressable onPress={() => { if (actionsId) removeRecording(actionsId); setActionsId(null); }} className="p-4 rounded-2xl bg-red-600">
-            <Text className="text-white text-center">Delete</Text>
+          <Pressable 
+            onPress={() => { 
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              if (actionsId) removeRecording(actionsId); 
+              setActionsId(null); 
+            }} 
+            style={{ 
+              padding: 16, 
+              borderRadius: 16, 
+              backgroundColor: '#DC2626' 
+            }}
+            accessible={true}
+            accessibilityLabel="Delete recording"
+            accessibilityRole="button"
+          >
+            <Text className="text-white text-center font-medium">Delete</Text>
           </Pressable>
         </View>
       </Modal>
 
       {/* Rename Modal */}
       <Modal visible={renameVisible} transparent animationType="slide" onRequestClose={() => setRenameVisible(false)}>
-        <View className="flex-1 justify-center bg-black/50 p-6">
-          <View className="bg-gray-800 rounded-2xl p-6">
-            <Text className="text-white text-xl font-bold mb-4">Rename Recording</Text>
-            <TextInput value={renameInput} onChangeText={setRenameInput} placeholder="Enter name" placeholderTextColor="#6B7280" className="bg-gray-700 text-white p-4 rounded-xl mb-4" />
+        <View className="flex-1 justify-center bg-black/80 p-6">
+          <View style={{ 
+            backgroundColor: '#0A0A0A', 
+            borderRadius: 16, 
+            padding: 24,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.1)'
+          }}>
+            <Text className="text-white text-xl font-semibold mb-4">Rename Recording</Text>
+            <TextInput 
+              value={renameInput} 
+              onChangeText={setRenameInput} 
+              placeholder="Enter name" 
+              placeholderTextColor="rgba(255, 255, 255, 0.4)" 
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: '#FFFFFF',
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+              }}
+            />
             <View className="flex-row gap-3">
-              <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Cancel</Text>
+              <Pressable 
+                onPress={() => { 
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRenameVisible(false); 
+                  setActionsId(null); 
+                }} 
+                style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
+                <Text className="text-white text-center font-medium">Cancel</Text>
               </Pressable>
-              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Save</Text>
+              <Pressable 
+                onPress={() => { 
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); 
+                  setRenameVisible(false); 
+                  setActionsId(null); 
+                }} 
+                style={{ flex: 1, backgroundColor: '#0084FF', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Save"
+                accessibilityRole="button"
+              >
+                <Text className="text-white text-center font-medium">Save</Text>
               </Pressable>
             </View>
           </View>
@@ -173,8 +288,18 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
           accessibilityRole="button"
           accessibilityLabel="Record new take"
           className="flex-row items-center gap-3 px-8 py-4 rounded-2xl"
-          style={{ backgroundColor: "#3B82F6", shadowColor: "#3B82F6", shadowOpacity: 0.3, shadowRadius: 12 }}
-          onPress={() => Alert.alert("Record New", "Recording new take (not implemented)")}
+          style={{ 
+            backgroundColor: '#0084FF', 
+            shadowColor: '#0084FF', 
+            shadowOpacity: 0.4, 
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 4 }
+          }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            const { toggleRecordingModal } = useLyricStore.getState();
+            toggleRecordingModal(true);
+          }}
         >
           <Ionicons name="mic-outline" size={24} color="#FFF" />
           <Text className="text-white font-semibold text-lg">Record New</Text>

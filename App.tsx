@@ -5,6 +5,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -142,8 +143,14 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
       <View className="flex-row items-center justify-between mb-3">
         {/* Section Type Dropdown */}
         <Pressable
-          onPress={() => setShowDropdown(!showDropdown)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowDropdown(!showDropdown);
+          }}
           className="flex-row items-center bg-gray-700 px-3 py-2 rounded-lg"
+          accessible={true}
+          accessibilityLabel="Change section type"
+          accessibilityRole="button"
         >
           <Ionicons name="menu" size={12} color="#9CA3AF" />
            <Text className="ml-2 text-sm font-medium text-gray-200">
@@ -156,8 +163,14 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         <View className="flex-row items-center" style={{ gap: 8 }}>
           {/* Star Button */}
           <Pressable 
-            onPress={() => toggleStarSection(section.id)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              toggleStarSection(section.id);
+            }}
             className="p-2"
+            accessible={true}
+            accessibilityLabel={section.isStarred ? "Remove from favorites" : "Add to favorites"}
+            accessibilityRole="button"
           >
             <Ionicons 
               name={section.isStarred ? "star" : "star-outline"} 
@@ -190,6 +203,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
             <Pressable
               key={type}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 updateSectionType(section.id, type);
                 setShowDropdown(false);
               }}
@@ -347,7 +361,10 @@ function MainScreen() {
         <View className="flex-row items-center" style={{ gap: 12 }}>
           {/* Projects Menu Button */}
           <Pressable
-            onPress={() => setShowProjectsSidebar(true)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowProjectsSidebar(true);
+            }}
             className="w-12 h-12 rounded-lg items-center justify-center"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
             accessible={true}
@@ -392,6 +409,7 @@ function MainScreen() {
            {/* Save Button */}
            <Pressable
              onPress={() => {
+               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                saveCurrentProject();
                setShowSaveToast(true);
                setTimeout(() => setShowSaveToast(false), 2000);
@@ -415,7 +433,10 @@ function MainScreen() {
 
             {/* Performance View Toggle */}
             <Pressable
-              onPress={() => togglePerformanceMode(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                togglePerformanceMode(true);
+              }}
               className="w-12 h-12 rounded-lg items-center justify-center"
               style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
               accessible={true}
@@ -451,6 +472,7 @@ function MainScreen() {
 
             {/* Add Section Button */}
             <AddSectionButton onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               const id = addSection("verse");
               requestAnimationFrame(() => {
                 scrollRef.current?.scrollToEnd({ animated: true });
@@ -474,7 +496,10 @@ function MainScreen() {
           {/* Recording Launch Button */}
           <View className="absolute bottom-4 left-0 right-0 items-center">
             <Pressable 
-              onPress={openRecorder}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                openRecorder();
+              }}
               className="w-16 h-16 rounded-full items-center justify-center"
               style={{
                 backgroundColor: '#0084FF',

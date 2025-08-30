@@ -44,7 +44,7 @@ export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggl
   return (
     <View
       accessible
-      accessibilityRole="listitem"
+      accessibilityRole="button"
       accessibilityLabel={r.name || "New Recording"}
       accessibilityState={{ expanded: isSelected }}
       style={{

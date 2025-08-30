@@ -104,9 +104,9 @@ export default function RecordingModal() {
 
                 console.log('Recording validation passed:', validation);
                 
-                const { addRecording, recordings, currentProject } = useLyricStore.getState();
-                const currentProjectId = currentProject?.id;
-                const countForProject = recordings.filter(r => r.projectId === currentProjectId).length;
+                const { addRecording, recordingsByProject, currentProjectId } = useLyricStore.getState();
+                const projectRecordings = recordingsByProject[currentProjectId ?? '__unassigned__'] ?? [];
+                const countForProject = projectRecordings.length;
                 const nextIndex = countForProject + 1;
                 addRecording({
                   name: `MUMBL ${nextIndex}`,

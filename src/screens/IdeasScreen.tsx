@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { useLyricStore } from '../state/lyricStore';
 import type { Section, Recording } from '../state/lyricStore';
 import { Audio } from 'expo-av';
@@ -467,22 +468,32 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900" style={{ paddingTop: insets.top }}>
-      <StatusBar barStyle="light-content" backgroundColor="#111827" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: '#000000', paddingTop: insets.top }}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
       
       {/* Header */}
       <View className="flex-row items-center px-4 pt-4 pb-6">
-        <Pressable onPress={onBack} className="w-10 h-10 rounded-full items-center justify-center mr-2" style={{ backgroundColor: "#1F2937" }}>
-          <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+        <Pressable 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onBack();
+          }} 
+          className="w-12 h-12 rounded-full items-center justify-center mr-4" 
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          accessible={true}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
         </Pressable>
-        <Text className="text-4xl font-bold text-white" style={{ fontSize: 34, fontWeight: '700', flex: 1 }}>Ideas</Text>
-        <View className="w-10 h-10 bg-gray-600 rounded-full items-center justify-center">
+        <Text className="text-4xl font-light text-white tracking-wide" style={{ flex: 1 }}>Ideas</Text>
+        <View className="w-10 h-10 bg-orange-500 rounded-full items-center justify-center">
           <Text className="text-white font-bold text-sm">A</Text>
         </View>
       </View>
 
       {/* Tab Navigation */}
-      <View className="flex-row px-4 mb-8 justify-center">
+      <View className="flex-row px-6 mb-8 justify-center">
         {[
           { key: 'lyrics', label: 'LYRIQS', icon: 'document-outline' },
           { key: 'verses', label: 'VERSES', icon: 'list-outline' },
@@ -490,29 +501,38 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         ].map((tab) => (
           <Pressable
             key={tab.key}
-            onPress={() => handleTabChange(tab.key as any)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleTabChange(tab.key as any);
+            }}
             className="items-center mx-2"
             style={{ flex: 1 }}
+            accessible={true}
+            accessibilityLabel={`${tab.label} tab`}
+            accessibilityRole="tab"
           >
             <View style={{
-              width: 60,
-              height: 60,
+              width: 96,
+              height: 64,
               borderRadius: 16,
               borderWidth: 2,
-              borderColor: activeTab === tab.key ? '#fff' : '#E5E7EB',
-              backgroundColor: activeTab === tab.key ? '#fff1' : '#fff0',
+              borderColor: activeTab === tab.key ? '#FFFFFF' : 'rgba(255, 255, 255, 0.2)',
+              backgroundColor: activeTab === tab.key ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 6,
+              marginBottom: 8,
             }}>
               <Ionicons
                 name={tab.icon as any}
-                size={28}
-                color={activeTab === tab.key ? '#fff' : '#E5E7EB'}
-                style={{ fontWeight: '300' }}
+                size={24}
+                color={activeTab === tab.key ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)'}
               />
             </View>
-            <Text style={{ color: activeTab === tab.key ? '#fff' : '#E5E7EB', fontSize: 14, fontWeight: '500', marginTop: 2 }}>{tab.label}</Text>
+            <Text style={{ 
+              color: activeTab === tab.key ? '#FFFFFF' : 'rgba(255, 255, 255, 0.6)', 
+              fontSize: 12, 
+              fontWeight: '500' 
+            }}>{tab.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -527,60 +547,70 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
           <View
             key={filteredIdeas[0].id}
             style={{
-              backgroundColor: '#FEF08A',
+              backgroundColor: '#1A1A1A',
               borderRadius: 24,
-              padding: 24,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              padding: 32,
               marginTop: 12,
               marginBottom: 32,
               minWidth: 280,
               maxWidth: 340,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.10,
-              shadowRadius: 8,
-              elevation: 3,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 16,
+              elevation: 8,
               alignItems: 'flex-start',
-              position: 'relative',
             }}
           >
-            <Text style={{ color: '#222', fontWeight: '600', fontSize: 17, marginBottom: 8 }}>{filteredIdeas[0].title}</Text>
-            <Text style={{ color: '#222', fontSize: 15, lineHeight: 22 }}>{filteredIdeas[0].content}</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 20, marginBottom: 16 }}>{filteredIdeas[0].title}</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 16, lineHeight: 24 }}>{filteredIdeas[0].content}</Text>
             
             {/* Action buttons */}
-            <View className="flex-row gap-2 mt-4">
+            <View className="flex-row gap-3 mt-6">
               <Pressable
-                onPress={() => handleEditIdea(filteredIdeas[0])}
-                className="px-3 py-2 bg-blue-600 rounded-lg"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  handleEditIdea(filteredIdeas[0]);
+                }}
+                style={{
+                  backgroundColor: '#0084FF',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                }}
+                accessible={true}
+                accessibilityLabel="Edit idea"
+                accessibilityRole="button"
               >
                 <Text className="text-white text-sm font-medium">Edit</Text>
               </Pressable>
               <Pressable
-                onPress={() => handleDeleteIdea(filteredIdeas[0].id, filteredIdeas[0].title, filteredIdeas[0].type)}
-                className="px-3 py-2 bg-red-600 rounded-lg"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  openProjectFromIdea(filteredIdeas[0]);
+                }}
+                style={{
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                }}
+                accessible={true}
+                accessibilityLabel="Use idea"
+                accessibilityRole="button"
               >
-                <Text className="text-white text-sm font-medium">Delete</Text>
+                <Text style={{ color: 'rgba(255, 255, 255, 0.8)' }} className="text-sm font-medium">Use</Text>
               </Pressable>
             </View>
-            
-            {/* Folded corner */}
-            <View style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: 0,
-              height: 0,
-              borderLeftWidth: 28,
-              borderBottomWidth: 28,
-              borderLeftColor: 'transparent',
-              borderBottomColor: '#FDE047',
-              borderBottomRightRadius: 8,
-            }} />
           </View>
         )}
         {activeTab !== 'takes' && filteredIdeas.length === 0 && (
           <View className="items-center py-20">
-            <Text className="text-gray-300 text-lg mb-2">No {activeTab} yet</Text>
-            <Text className="text-gray-500 text-sm">
+            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 18, marginBottom: 8 }}>No {activeTab} yet</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 14, textAlign: 'center' }}>
               {activeTab === 'verses'
                 ? 'Star some sections in the editor to see them here'
                 : 'Tap the + button to create your first idea'}
@@ -605,16 +635,51 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
  
       {/* Rename Modal */}
       <Modal visible={renameVisible} transparent animationType="slide" onRequestClose={() => setRenameVisible(false)}>
-        <View className="flex-1 justify-center bg-black/50 p-6">
-          <View className="bg-gray-800 rounded-2xl p-6">
-            <Text className="text-white text-xl font-bold mb-4">Rename Recording</Text>
-            <TextInput value={renameInput} onChangeText={setRenameInput} placeholder="Enter name" placeholderTextColor="#6B7280" className="bg-gray-700 text-white p-4 rounded-xl mb-4" />
+        <View className="flex-1 justify-center bg-black/80 p-6">
+          <View style={{ backgroundColor: '#0A0A0A', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+            <Text className="text-white text-xl font-semibold mb-4">Rename Recording</Text>
+            <TextInput 
+              value={renameInput} 
+              onChangeText={setRenameInput} 
+              placeholder="Enter name" 
+              placeholderTextColor="rgba(255, 255, 255, 0.4)" 
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+                color: '#FFFFFF', 
+                padding: 16, 
+                borderRadius: 12, 
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+              }} 
+            />
             <View className="flex-row gap-3">
-              <Pressable onPress={() => { setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-gray-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Cancel</Text>
+              <Pressable 
+                onPress={() => { 
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRenameVisible(false); 
+                  setActionsId(null); 
+                }} 
+                style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
+                <Text className="text-white text-center font-medium">Cancel</Text>
               </Pressable>
-              <Pressable onPress={() => { if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); setRenameVisible(false); setActionsId(null); }} className="flex-1 bg-blue-600 p-4 rounded-xl">
-                <Text className="text-white text-center">Save</Text>
+              <Pressable 
+                onPress={() => { 
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  if (actionsId) updateRecordingName(actionsId, renameInput.trim() || "MUMBL"); 
+                  setRenameVisible(false); 
+                  setActionsId(null); 
+                }} 
+                style={{ flex: 1, backgroundColor: '#0084FF', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Save"
+                accessibilityRole="button"
+              >
+                <Text className="text-white text-center font-medium">Save</Text>
               </Pressable>
             </View>
           </View>
@@ -628,36 +693,60 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
         animationType="slide"
         onRequestClose={() => setEditingIdea(null)}
       >
-        <View className="flex-1 justify-center bg-black/50 p-6">
-          <View className="bg-gray-800 rounded-2xl p-6 max-h-96">
-            <Text className="text-white text-xl font-bold mb-4">Edit Idea</Text>
+        <View className="flex-1 justify-center bg-black/80 p-6">
+          <View style={{ backgroundColor: '#0A0A0A', borderRadius: 16, padding: 24, maxHeight: 400, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+            <Text className="text-white text-xl font-semibold mb-6">Edit Idea</Text>
             
-            <Text className="text-gray-300 text-sm mb-2">Title</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, marginBottom: 8 }}>Title</Text>
             <TextInput
               value={editTitle}
               onChangeText={setEditTitle}
               placeholder="Enter title..."
-              placeholderTextColor="#6B7280"
-              className="bg-gray-700 text-white p-4 rounded-xl mb-4 text-base"
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: '#FFFFFF',
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 16,
+                fontSize: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)'
+              }}
               autoFocus
             />
             
-            <Text className="text-gray-300 text-sm mb-2">Content</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, marginBottom: 8 }}>Content</Text>
             <TextInput
               value={editContent}
               onChangeText={setEditContent}
               placeholder="Enter content..."
-              placeholderTextColor="#6B7280"
-              className="bg-gray-700 text-white p-4 rounded-xl mb-6 text-base"
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: '#FFFFFF',
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 24,
+                fontSize: 16,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                minHeight: 120,
+                textAlignVertical: 'top'
+              }}
               multiline
-              numberOfLines={6}
-              textAlignVertical="top"
             />
             
             <View className="flex-row gap-3">
               <Pressable
-                onPress={() => setEditingIdea(null)}
-                className="flex-1 bg-gray-600 p-4 rounded-xl"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setEditingIdea(null);
+                }}
+                style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
               >
                 <Text className="text-white text-center font-medium">
                   Cancel
@@ -665,8 +754,14 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               </Pressable>
               
               <Pressable
-                onPress={handleSaveEdit}
-                className="flex-1 bg-blue-600 p-4 rounded-xl"
+                onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  handleSaveEdit();
+                }}
+                style={{ flex: 1, backgroundColor: '#0084FF', padding: 16, borderRadius: 12 }}
+                accessible={true}
+                accessibilityLabel="Save"
+                accessibilityRole="button"
               >
                 <Text className="text-white text-center font-medium">
                   Save

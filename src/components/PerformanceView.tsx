@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from 'expo-haptics';
 import { useLyricStore } from '../state/lyricStore';
 
 type LyricLine = { time: string; text: string };
@@ -168,7 +169,16 @@ export default function PerformanceViewGlass() {
     >
       {/* Back button */}
       <View style={styles.header}>
-        <Pressable onPress={goBack} style={styles.backButton}>
+        <Pressable 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            goBack();
+          }} 
+          style={styles.backButton}
+          accessible={true}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
       </View>
@@ -219,21 +229,39 @@ export default function PerformanceViewGlass() {
                 <View style={styles.controls}>
                   <Pressable
                     style={styles.controlBtn}
-                    onPress={() => setCurrentSecs((s) => clamp(s - 10, 0, totalSecs))}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setCurrentSecs((s) => clamp(s - 10, 0, totalSecs));
+                    }}
+                    accessible={true}
+                    accessibilityLabel="Rewind 10 seconds"
+                    accessibilityRole="button"
                   >
                     <Ionicons name="play-back" size={20} color="#fff" />
                   </Pressable>
 
                   <Pressable
                     style={styles.playBtn}
-                    onPress={() => setIsPlaying((p) => !p)}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setIsPlaying((p) => !p);
+                    }}
+                    accessible={true}
+                    accessibilityLabel={isPlaying ? "Pause" : "Play"}
+                    accessibilityRole="button"
                   >
                     <Ionicons name={isPlaying ? "pause" : "play"} size={28} color="#000" style={{ marginLeft: isPlaying ? 0 : 2 }} />
                   </Pressable>
 
                   <Pressable
                     style={styles.controlBtn}
-                    onPress={() => setCurrentSecs((s) => clamp(s + 10, 0, totalSecs))}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setCurrentSecs((s) => clamp(s + 10, 0, totalSecs));
+                    }}
+                    accessible={true}
+                    accessibilityLabel="Fast forward 10 seconds"
+                    accessibilityRole="button"
                   >
                     <Ionicons name="play-forward" size={20} color="#fff" />
                   </Pressable>
@@ -271,7 +299,13 @@ export default function PerformanceViewGlass() {
 
                 return (
                   <Pressable
-                    onPress={() => onStartEdit(index)}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onStartEdit(index);
+                    }}
+                    accessible={true}
+                    accessibilityLabel={`Edit lyric: ${item.text}`}
+                    accessibilityRole="button"
                     style={[
                       styles.lyricLine,
                       state === "past" && styles.lyricPast,
@@ -311,11 +345,21 @@ export default function PerformanceViewGlass() {
 
       {/* Bottom nav */}
       <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        <Pressable style={styles.navBtn}>
+        <Pressable 
+          style={styles.navBtn}
+          accessible={true}
+          accessibilityLabel="Notes"
+          accessibilityRole="button"
+        >
           <Ionicons name="document-text-outline" size={26} color="#8e8e93" />
           <Text style={styles.navLabel}>notes</Text>
         </Pressable>
-        <Pressable style={styles.navBtn}>
+        <Pressable 
+          style={styles.navBtn}
+          accessible={true}
+          accessibilityLabel="Edit"
+          accessibilityRole="button"
+        >
           <Ionicons name="pencil-outline" size={26} color="#8e8e93" />
           <Text style={styles.navLabel}>edit</Text>
         </Pressable>

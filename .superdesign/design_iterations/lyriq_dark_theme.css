@@ -1,0 +1,218 @@
+/* LYRIQ Dark Mode Theme - Midnight Studio */
+:root {
+  /* Base Colors - Pure Black Foundation */
+  --background: #000000;
+  --surface-primary: #0A0A0A;
+  --surface-secondary: #1A1A1A;
+  --surface-tertiary: #2A2A2A;
+  
+  /* Text Hierarchy */
+  --text-primary: #FFFFFF;
+  --text-secondary: #E5E7EB;
+  --text-tertiary: #9CA3AF;
+  --text-disabled: #6B7280;
+  
+  /* Accent Colors */
+  --accent-blue: #0084FF;
+  --accent-blue-hover: #0066CC;
+  --accent-blue-active: #004499;
+  --accent-amber: #FF9500;
+  --accent-red: #FF3B30;
+  --accent-green: #30D158;
+  
+  /* Interactive States */
+  --interactive-hover: rgba(255, 255, 255, 0.05);
+  --interactive-pressed: rgba(255, 255, 255, 0.1);
+  --interactive-disabled: rgba(255, 255, 255, 0.02);
+  
+  /* Borders & Separators */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  
+  /* Shadows */
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-large: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(0, 132, 255, 0.2);
+  
+  /* Glass Morphism */
+  --glass-background: rgba(26, 26, 26, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-backdrop-filter: blur(20px) saturate(180%);
+  
+  /* Typography */
+  --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-lyric: Georgia, 'Times New Roman', serif;
+  --font-mono: 'SF Mono', Menlo, 'Monaco', 'Cascadia Code', monospace;
+  
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Animation Timing */
+  --timing-fast: 150ms;
+  --timing-normal: 250ms;
+  --timing-slow: 350ms;
+  --timing-gesture: 400ms;
+  
+  /* Easing Functions */
+  --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Component Styles */
+.lyriq-header {
+  background: var(--background);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.lyriq-section-card {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-medium);
+  transition: all var(--timing-normal) var(--ease-smooth);
+}
+
+.lyriq-section-card:hover {
+  background: var(--surface-secondary);
+  border-color: var(--border-medium);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-large);
+}
+
+.lyriq-glass-card {
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  box-shadow: var(--shadow-large), var(--shadow-glow);
+}
+
+.lyriq-button-primary {
+  background: var(--accent-blue);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--font-body);
+  font-weight: 600;
+  transition: all var(--timing-fast) var(--ease-smooth);
+  cursor: pointer;
+}
+
+.lyriq-button-primary:hover {
+  background: var(--accent-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.lyriq-button-primary:active {
+  background: var(--accent-blue-active);
+  transform: translateY(0);
+}
+
+.lyriq-text-lyric {
+  font-family: var(--font-lyric);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 18px;
+}
+
+.lyriq-text-header {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-weight: 300;
+  font-size: 34px;
+  letter-spacing: -0.5px;
+}
+
+.lyriq-text-body {
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.lyriq-waveform-bar {
+  background: var(--accent-blue);
+  border-radius: 2px;
+  transition: all var(--timing-fast) var(--ease-spring);
+  box-shadow: 0 0 8px rgba(0, 132, 255, 0.3);
+}
+
+.lyriq-waveform-bar.active {
+  background: linear-gradient(180deg, var(--accent-blue) 0%, #00C6FF 100%);
+  box-shadow: 0 0 16px rgba(0, 132, 255, 0.5);
+}
+
+/* Animation Classes */
+.lyriq-fade-in {
+  animation: fadeIn var(--timing-normal) var(--ease-smooth);
+}
+
+.lyriq-slide-up {
+  animation: slideUp var(--timing-gesture) var(--ease-spring);
+}
+
+.lyriq-spring-in {
+  animation: springIn var(--timing-slow) var(--ease-spring);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes springIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 480px) {
+  .lyriq-text-header {
+    font-size: 28px;
+  }
+  
+  .lyriq-section-card {
+    padding: var(--space-md);
+  }
+}

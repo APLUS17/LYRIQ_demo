@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LYRIQ - Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="lyriq_profile_theme.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans) !important;
+            background: var(--background) !important;
+            color: var(--foreground) !important;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Mobile safe areas */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Animations */
+        .screen-enter {
+            animation: screenEnter 400ms ease-out;
+        }
+        
+        .header-slide {
+            animation: headerSlide 300ms ease-out;
+        }
+        
+        .avatar-zoom {
+            animation: avatarZoom 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55) 200ms both;
+        }
+        
+        .stats-reveal {
+            animation: statsReveal 600ms ease-out;
+        }
+        
+        .activity-item {
+            animation: activityReveal 400ms ease-out;
+        }
+        
+        @keyframes screenEnter {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes headerSlide {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes avatarZoom {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes statsReveal {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes activityReveal {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Interactive states */
+        .stat-card {
+            transition: all 200ms ease-out;
+            cursor: pointer;
+        }
+        
+        .stat-card:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+        
+        .setting-row {
+            transition: all 150ms ease-out;
+            cursor: pointer;
+        }
+        
+        .setting-row:hover {
+            background: var(--muted);
+            transform: translateX(5px);
+        }
+        
+        .setting-row:active {
+            background: var(--secondary);
+        }
+        
+        .back-btn {
+            transition: all 200ms ease-out;
+        }
+        
+        .back-btn:active {
+            transform: scale(0.95) translateX(-3px);
+        }
+        
+        .avatar-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .avatar-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 50%, var(--gray-50) 50.1%, transparent 50.2%);
+            opacity: 0;
+            transition: opacity 300ms ease-out;
+        }
+        
+        .avatar-container:hover::after {
+            opacity: 0.1;
+        }
+        
+        /* Sidebar overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 300ms ease-out;
+            z-index: 40;
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 280px;
+            background: var(--card);
+            transform: translateX(-100%);
+            transition: transform 350ms ease-out;
+            z-index: 50;
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .sidebar.active {
+            transform: translateX(0);
+        }
+        
+        /* Stagger animations */
+        .stats-grid .stat-card:nth-child(1) { animation-delay: 0ms; }
+        .stats-grid .stat-card:nth-child(2) { animation-delay: 100ms; }
+        .stats-grid .stat-card:nth-child(3) { animation-delay: 200ms; }
+        .stats-grid .stat-card:nth-child(4) { animation-delay: 300ms; }
+        
+        .activity-list .activity-item:nth-child(1) { animation-delay: 400ms; }
+        .activity-list .activity-item:nth-child(2) { animation-delay: 480ms; }
+        .activity-list .activity-item:nth-child(3) { animation-delay: 560ms; }
+        
+        /* Focus states for accessibility */
+        .focusable:focus {
+            outline: 2px solid var(--ring);
+            outline-offset: 2px;
+        }
+        
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, var(--muted) 25%, var(--accent) 50%, var(--muted) 75%);
+            background-size: 200% 100%;
+            animation: skeleton 1500ms infinite;
+        }
+        
+        @keyframes skeleton {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .text-display {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* Touch targets */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Scroll behavior */
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+        
+        /* Ripple effect */
+        .ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ripple::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--gray-50);
+            transform: translate(-50%, -50%);
+            transition: width 400ms ease-out, height 400ms ease-out, opacity 400ms ease-out;
+            opacity: 0;
+        }
+        
+        .ripple:active::before {
+            width: 300px;
+            height: 300px;
+            opacity: 0.1;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar safe-area-top" id="sidebar">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-title font-bold">LYRIQ</h2>
+                <button onclick="toggleSidebar()" class="touch-target focusable">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="#" class="setting-row flex items-center space-x-3 p-3 rounded-lg">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="setting-row flex items-center space-x-3 p-3 rounded-lg">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="setting-row flex items-center space-x-3 p-3 rounded-lg">
+                    <i data-lucide="mic" class="w-5 h-5"></i>
+                    <span>Recordings</span>
+                </a>
+                <a href="#" class="setting-row flex items-center space-x-3 p-3 rounded-lg bg-secondary">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="screen-enter">
+        <!-- Header -->
+        <header class="header-slide flex items-center justify-between p-4 safe-area-top border-b border-border">
+            <button onclick="toggleSidebar()" class="back-btn touch-target focusable ripple rounded-lg">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-title font-semibold">Profile</h1>
+            <button class="touch-target focusable ripple rounded-lg">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+            </button>
+        </header>
+        
+        <!-- Content -->
+        <main class="pb-8 safe-area-bottom scroll-smooth">
+            <!-- User Info Section -->
+            <section class="px-4 py-8 text-center">
+                <div class="avatar-zoom avatar-container w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-secondary">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face" 
+                         alt="Profile Avatar" class="w-full h-full object-cover">
+                </div>
+                <h2 class="text-display font-bold mb-1">Alex Rivera</h2>
+                <p class="text-caption text-muted-foreground">@alexlyrics</p>
+                <p class="text-body text-muted-foreground mt-2 max-w-64 mx-auto">
+                    Singer-songwriter crafting stories through melody and verse
+                </p>
+            </section>
+            
+            <!-- Stats Grid -->
+            <section class="px-4 mb-8">
+                <div class="stats-grid grid grid-cols-4 gap-3">
+                    <div class="stat-card stats-reveal bg-card border border-border rounded-xl p-3 text-center">
+                        <div class="text-title font-bold text-foreground">12</div>
+                        <div class="text-caption text-muted-foreground">Projects</div>
+                    </div>
+                    <div class="stat-card stats-reveal bg-card border border-border rounded-xl p-3 text-center">
+                        <div class="text-title font-bold text-foreground">47</div>
+                        <div class="text-caption text-muted-foreground">Sections</div>
+                    </div>
+                    <div class="stat-card stats-reveal bg-card border border-border rounded-xl p-3 text-center">
+                        <div class="text-title font-bold text-foreground">23</div>
+                        <div class="text-caption text-muted-foreground">Takes</div>
+                    </div>
+                    <div class="stat-card stats-reveal bg-card border border-border rounded-xl p-3 text-center">
+                        <div class="text-title font-bold text-foreground">8</div>
+                        <div class="text-caption text-muted-foreground">Starred</div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Recent Activity -->
+            <section class="px-4 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-title font-semibold">Recent Activity</h3>
+                    <button class="touch-target focusable text-muted-foreground">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <div class="activity-list space-y-3">
+                    <div class="activity-item bg-muted rounded-xl p-4 flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
+                            <i data-lucide="music" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-body font-medium">"Midnight Dreams"</p>
+                            <p class="text-caption text-muted-foreground">Created 2 hours ago</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item bg-muted rounded-xl p-4 flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
+                            <i data-lucide="star" class="w-5 h-5 text-background"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-body font-medium">Starred "Chorus v2"</p>
+                            <p class="text-caption text-muted-foreground">1 day ago</p>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item bg-muted rounded-xl p-4 flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-destructive rounded-lg flex items-center justify-center">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-body font-medium">Recorded mumble</p>
+                            <p class="text-caption text-muted-foreground">3 days ago</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings -->
+            <section class="px-4 mb-8">
+                <h3 class="text-title font-semibold mb-4">Settings</h3>
+                
+                <div class="space-y-1">
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="palette" class="w-5 h-5"></i>
+                            <span class="text-body">Theme & Display</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            <span class="text-body">Audio Preferences</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                            <span class="text-body">AI Assistant</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-caption text-muted-foreground">GPT-4</span>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="upload" class="w-5 h-5"></i>
+                            <span class="text-body">Export & Backup</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="hard-drive" class="w-5 h-5"></i>
+                            <span class="text-body">Storage Management</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-caption text-muted-foreground">4.2 GB</span>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Account Actions -->
+            <section class="px-4 mb-8">
+                <h3 class="text-title font-semibold mb-4">Account</h3>
+                
+                <div class="space-y-1">
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="info" class="w-5 h-5"></i>
+                            <span class="text-body">About LYRIQ</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-caption text-muted-foreground">v2.1.0</span>
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="mail" class="w-5 h-5"></i>
+                            <span class="text-body">Support</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="shield" class="w-5 h-5"></i>
+                            <span class="text-body">Privacy Settings</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                    
+                    <button class="setting-row w-full flex items-center justify-between p-4 rounded-xl text-left text-destructive-foreground">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                            <span class="text-body">Sign Out</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-muted-foreground"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Sidebar functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        
+        // Add stagger delays to animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Stagger stats cards
+            const statCards = document.querySelectorAll('.stats-grid .stat-card');
+            statCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 100}ms`;
+                card.classList.add('stats-reveal');
+            });
+            
+            // Stagger activity items
+            const activityItems = document.querySelectorAll('.activity-list .activity-item');
+            activityItems.forEach((item, index) => {
+                item.style.animationDelay = `${400 + index * 80}ms`;
+            });
+            
+            // Add ripple effect to interactive elements
+            const rippleElements = document.querySelectorAll('.ripple, .stat-card, .setting-row');
+            rippleElements.forEach(element => {
+                element.addEventListener('touchstart', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.touches[0].clientX - rect.left - size / 2;
+                    const y = e.touches[0].clientY - rect.top - size / 2;
+                    
+                    const ripple = document.createElement('span');
+                    ripple.style.cssText = `
+                        position: absolute;
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${x}px;
+                        top: ${y}px;
+                        background: var(--gray-50);
+                        border-radius: 50%;
+                        opacity: 0.1;
+                        transform: scale(0);
+                        animation: rippleAnimation 400ms ease-out;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 400);
+                });
+            });
+        });
+        
+        // Ripple animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes rippleAnimation {
+                to {
+                    transform: scale(2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Smooth scroll behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+        
+        // Add loading states simulation
+        setTimeout(() => {
+            const skeletons = document.querySelectorAll('.skeleton');
+            skeletons.forEach(skeleton => {
+                skeleton.classList.remove('skeleton');
+            });
+        }, 1500);
+        
+        // Handle viewport changes for mobile
+        function handleViewportChange() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        window.addEventListener('resize', handleViewportChange);
+        handleViewportChange();
+        
+        // Touch feedback for iOS
+        if (navigator.platform.includes('iPhone') || navigator.platform.includes('iPad')) {
+            document.addEventListener('touchstart', function() {}, { passive: true });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+/* LYRIQ Profile Screen Theme - Dark Monochrome */
+:root {
+  /* Base Colors - Pure monochrome dark palette */
+  --background: oklch(0.0500 0 0);
+  --foreground: oklch(0.9800 0 0);
+  --card: oklch(0.0800 0 0);
+  --card-foreground: oklch(0.9800 0 0);
+  --popover: oklch(0.0800 0 0);
+  --popover-foreground: oklch(0.9800 0 0);
+  
+  /* Primary - Pure white for key actions */
+  --primary: oklch(0.9800 0 0);
+  --primary-foreground: oklch(0.0500 0 0);
+  
+  /* Secondary - Medium gray */
+  --secondary: oklch(0.1800 0 0);
+  --secondary-foreground: oklch(0.9800 0 0);
+  
+  /* Muted - Subtle grays */
+  --muted: oklch(0.1200 0 0);
+  --muted-foreground: oklch(0.6500 0 0);
+  
+  /* Accent - Light gray for highlights */
+  --accent: oklch(0.8500 0 0);
+  --accent-foreground: oklch(0.0500 0 0);
+  
+  /* Destructive - Dark gray (no color) */
+  --destructive: oklch(0.3500 0 0);
+  --destructive-foreground: oklch(0.9800 0 0);
+  
+  /* Borders and inputs */
+  --border: oklch(0.2000 0 0);
+  --input: oklch(0.1200 0 0);
+  --ring: oklch(0.9800 0 0);
+  
+  /* Typography - Music app focused */
+  --font-sans: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: 'Merriweather', 'Georgia', 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  
+  /* Spacing and radius - Clean, minimal */
+  --radius: 0.75rem;
+  --spacing: 0.25rem;
+  
+  /* Shadows - Subtle monochrome depth */
+  --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
+  --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.20);
+  --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.20), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+  --shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.25), 0 2px 4px -2px hsl(0 0% 0% / 0.15);
+  --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.25), 0 2px 4px -2px hsl(0 0% 0% / 0.15);
+  --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.25), 0 4px 6px -4px hsl(0 0% 0% / 0.15);
+  --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.25), 0 8px 10px -6px hsl(0 0% 0% / 0.15);
+  --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.40);
+  
+  /* Monochrome accent grays */
+  --gray-50: oklch(0.9800 0 0);
+  --gray-100: oklch(0.9500 0 0);
+  --gray-200: oklch(0.8500 0 0);
+  --gray-300: oklch(0.7500 0 0);
+  --gray-400: oklch(0.6500 0 0);
+  --gray-500: oklch(0.5500 0 0);
+  --gray-600: oklch(0.4500 0 0);
+  --gray-700: oklch(0.3500 0 0);
+  --gray-800: oklch(0.1800 0 0);
+  --gray-900: oklch(0.0800 0 0);
+  --gray-950: oklch(0.0500 0 0);
+}
+
+/* Mobile-first responsive typography */
+.text-display {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-title {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Mobile touch targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Card components */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.activity-item {
+  background: var(--muted);
+  border-radius: calc(var(--radius) * 0.75);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Musical accent elements */
+.musical-accent {
+  background: linear-gradient(135deg, var(--musical-gold), var(--stage-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

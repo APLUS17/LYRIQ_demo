@@ -91,6 +91,15 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
     }
   }, [sound]);
 
+  const seekTo = useCallback(async (seconds: number) => {
+    if (!sound) return;
+    const st = await sound.getStatusAsync();
+    if ("isLoaded" in st && st.isLoaded && st.durationMillis != null) {
+      const targetMs = Math.max(0, Math.min(seconds * 1000, st.durationMillis));
+      await sound.setPositionAsync(targetMs);
+    }
+  }, [sound]);
+
   // Sorting: newest first
   const items = useMemo(() => (
     validRecordings.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -164,6 +173,7 @@ export default function TakesScreen({ onBack }: { onBack: () => void }) {
                 totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
                 isPlaying={selectedId === r.id ? isPlaying : false}
                 onSeekBy={seekBy}
+                onSeekTo={seekTo}
               />
             </View>
           ))}

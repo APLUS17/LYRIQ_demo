@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, Text, Pressable, AccessibilityInfo, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from 'expo-haptics';
 
 export type MumbleRowProps = {
   r: { id: string; name: string; createdAt: any; duration?: number };
@@ -13,6 +14,7 @@ export type MumbleRowProps = {
   totalTime: number;
   isPlaying: boolean;
   onSeekBy?: (deltaSec: number) => void;
+  onSeekTo?: (seconds: number) => void;
 };
 
 const formatClock = (seconds: number) => {
@@ -40,7 +42,8 @@ const formatWhen = (d: Date) => {
   return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggle, onDelete, currentTime, totalTime, isPlaying, onSeekBy }: MumbleRowProps) {
+export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggle, onDelete, currentTime, totalTime, isPlaying, onSeekBy, onSeekTo }: MumbleRowProps) {
+  const scrubberRef = useRef<View>(null);
   return (
     <View
       accessible
@@ -95,8 +98,17 @@ export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggl
         <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: "#18181B" }}>
           {/* Scrubber */}
           <Pressable
+            ref={scrubberRef}
             onPress={(e) => {
-              // TODO: Implement seek logic if needed
+              if (!onSeekTo || totalTime <= 0) return;
+              
+              // Get touch position relative to scrubber width
+              const { locationX } = e.nativeEvent;
+              const progress = Math.max(0, Math.min(1, locationX / 300)); // assume 300px width
+              const seekTime = Math.floor(progress * totalTime);
+              
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSeekTo(seekTime);
             }}
             className="h-6 justify-center"
             accessibilityRole="adjustable"
@@ -128,38 +140,50 @@ export default function MumbleRow({ r, isSelected, onSelect, onEllipsis, onToggl
           {/* Controls */}
           <View className="flex-row items-center justify-between mt-6">
             <Pressable
-              onPress={() => onSeekBy?.(-15)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSeekBy?.(-15);
+              }}
               accessibilityRole="button"
               accessibilityLabel="Seek backward 15 seconds"
               className="items-center justify-center"
-              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >
               <Ionicons name="play-back" size={22} color="#E5E7EB" />
             </Pressable>
             <Pressable
-              onPress={onToggle}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onToggle();
+              }}
               accessibilityRole="button"
               accessibilityLabel={isPlaying ? "Pause" : "Play"}
               className="items-center justify-center"
               style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#FFFFFF" }}
             >
-              <Ionicons name={isPlaying ? "pause" : "play"} size={28} color="#111827" />
+              <Ionicons name={isPlaying ? "pause" : "play"} size={28} color="#111827" style={{ marginLeft: isPlaying ? 0 : 2 }} />
             </Pressable>
             <Pressable
-              onPress={() => onSeekBy?.(15)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onSeekBy?.(15);
+              }}
               accessibilityRole="button"
               accessibilityLabel="Seek forward 15 seconds"
               className="items-center justify-center"
-              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >
               <Ionicons name="play-forward" size={22} color="#E5E7EB" />
             </Pressable>
             <Pressable
-              onPress={onDelete}
+              onPress={() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                onDelete();
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Delete take: ${r.name || "New Recording"}`}
               className="items-center justify-center"
-              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#232326" }}
+              style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(220, 38, 38, 0.1)" }}
             >
               <Ionicons name="trash" size={22} color="#EF4444" />
             </Pressable>

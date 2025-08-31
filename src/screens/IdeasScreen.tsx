@@ -141,6 +141,15 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
     }
   }, [sound]);
 
+  const seekTo = useCallback(async (seconds: number) => {
+    if (!sound) return;
+    const st = await sound.getStatusAsync();
+    if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
+      const targetMs = Math.max(0, Math.min(seconds * 1000, st.durationMillis));
+      await sound.setPositionAsync(targetMs);
+    }
+  }, [sound]);
+
   const formatRemaining = (current: number, total: number) => {
     const remain = Math.max(0, total - current);
     const m = Math.floor(remain / 60);
@@ -365,6 +374,7 @@ export default function IdeasScreen({ onBack }: { onBack: () => void }) {
               totalTime={selectedId === r.id ? totalTime : Math.floor(r.duration || 0)}
               isPlaying={selectedId === r.id ? isPlaying : false}
               onSeekBy={seekBy}
+              onSeekTo={seekTo}
             />
           ))}
         </ScrollView>

@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from 'expo-haptics';
+import * as Haptics from 'expo-haptics';\nimport { Audio } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -276,7 +276,7 @@ function MainScreen() {
   
   // Use memoized selectors to prevent fresh references
   const currentProjectId = useLyricStore(s => s.currentProjectId);
-  const sectionsByProject = useLyricStore(s => s.sectionsByProject);
+  const sectionsByProject = useLyricStore(s => s.sectionsByProject);\n  const recordingsByProject = useLyricStore(s => s.recordingsByProject);
   const projects = useLyricStore(s => s.projects);
   
   const sections = useMemo(() => {
@@ -287,6 +287,12 @@ function MainScreen() {
   const currentProject = useMemo(() => {
     return projects.find(p => p.id === currentProjectId) ?? null;
   }, [projects, currentProjectId]);
+  
+  const latestRecording = useMemo(() => {
+    const pid = currentProjectId ?? '__unassigned__';
+    const recordings = recordingsByProject[pid] ?? [];
+    return recordings.length > 0 ? recordings[recordings.length - 1] : null;
+  }, [currentProjectId, recordingsByProject]);
   
   const addSection = useLyricStore(s => s.addSection);
   const updateSection = useLyricStore(s => s.updateSection);
@@ -303,6 +309,12 @@ function MainScreen() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const lastTitleTapRef = useRef<number>(0);
+  
+  // Latest recording playback state
+  const [latestSound, setLatestSound] = useState<Audio.Sound | null>(null);
+  const [isLatestPlaying, setIsLatestPlaying] = useState(false);
+  const [latestCurrentTime, setLatestCurrentTime] = useState(0);
+  const [latestTotalTime, setLatestTotalTime] = useState(0);
 
   // Scroll and input refs for focusing on add
   const scrollRef = useRef<ScrollView>(null);
@@ -328,6 +340,77 @@ function MainScreen() {
       renameProject(proj.id, newName);
     }
   }, [titleInput, displayedTitle, currentProject, renameProject, saveCurrentProject]);
+
+  // Latest recording playback handlers
+  const toggleLatestPlayback = useCallback(async () => {
+    if (!latestSound) return;
+    const st = await latestSound.getStatusAsync();
+    if ('isLoaded' in st && st.isLoaded) {
+      if (st.isPlaying) {
+        await latestSound.pauseAsync();
+      } else {
+        await latestSound.playAsync();
+      }
+    }
+  }, [latestSound]);
+
+  const seekLatestBy = useCallback(async (deltaSec: number) => {
+    if (!latestSound) return;
+    const st = await latestSound.getStatusAsync();
+    if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
+      const nextMs = Math.max(0, Math.min((st.positionMillis ?? 0) + deltaSec * 1000, st.durationMillis));
+      await latestSound.setPositionAsync(nextMs);
+    }
+  }, [latestSound]);
+
+  // Load latest recording audio
+  useEffect(() => {
+    let cancelled = false;
+    const loadLatest = async () => {
+      try {
+        if (!latestRecording?.uri) {
+          if (latestSound) {
+            await latestSound.unloadAsync();
+            setLatestSound(null);
+          }
+          return;
+        }
+        
+        if (latestSound) {
+          await latestSound.unloadAsync();
+        }
+        
+        const { sound: newSound, status } = await Audio.Sound.createAsync(
+          { uri: latestRecording.uri },
+          { shouldPlay: false, progressUpdateIntervalMillis: 500 }
+        );
+        
+        if (cancelled) {
+          await newSound.unloadAsync();
+          return;
+        }
+        
+        newSound.setOnPlaybackStatusUpdate((s: any) => {
+          if (!s || !s.isLoaded) return;
+          setIsLatestPlaying(Boolean(s.isPlaying));
+          setLatestCurrentTime(Math.floor((s.positionMillis ?? 0) / 1000));
+          setLatestTotalTime(Math.floor((s.durationMillis ?? 0) / 1000));
+        });
+        
+        setLatestSound(newSound);
+        const dur = (status as any)?.durationMillis ?? (latestRecording.duration * 1000) ?? 0;
+        setLatestTotalTime(Math.floor(dur / 1000));
+        setLatestCurrentTime(0);
+      } catch (error) {
+        console.log('Error loading latest recording:', error);
+      }
+    };
+    
+    loadLatest();
+    return () => {
+      cancelled = true;
+    };
+  }, [latestRecording?.uri, latestRecording?.id]);
 
   /* callback to open modal */
   const openRecorder = useCallback(() => toggleRecordingModal(true), [toggleRecordingModal]);
@@ -447,6 +530,61 @@ function MainScreen() {
             </Pressable>
         </View>
       </View>
+
+      {/* Latest Recording Mini Player */}
+      {latestRecording && (
+        <View className="mx-6 mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 mr-3">
+              <Text className="text-white text-sm font-medium" numberOfLines={1}>{latestRecording.name}</Text>
+              <Text className="text-gray-400 text-xs mt-1">
+                {Math.floor(latestCurrentTime / 60)}:{(latestCurrentTime % 60).toString().padStart(2, '0')} / {Math.floor(latestTotalTime / 60)}:{(latestTotalTime % 60).toString().padStart(2, '0')}
+              </Text>
+            </View>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  seekLatestBy(-10);
+                }}
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                accessible={true}
+                accessibilityLabel="Rewind 10 seconds"
+                accessibilityRole="button"
+              >
+                <Ionicons name="play-back" size={16} color="#9CA3AF" />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  toggleLatestPlayback();
+                }}
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{ backgroundColor: '#0084FF' }}
+                accessible={true}
+                accessibilityLabel={isLatestPlaying ? "Pause" : "Play"}
+                accessibilityRole="button"
+              >
+                <Ionicons name={isLatestPlaying ? "pause" : "play"} size={18} color="white" style={{ marginLeft: isLatestPlaying ? 0 : 1 }} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  seekLatestBy(10);
+                }}
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                accessible={true}
+                accessibilityLabel="Fast forward 10 seconds"
+                accessibilityRole="button"
+              >
+                <Ionicons name="play-forward" size={16} color="#9CA3AF" />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
 
        {/* Sections Container with Swipe-Up Gesture */}
        <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]}>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUMBL Recording Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif !important;
+            background: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100vh !important;
+            overflow: hidden !important;
+        }
+        
+        .drag-handle {
+            background: #666 !important;
+            border-radius: 3px !important;
+        }
+        
+        .waveform {
+            background: repeating-linear-gradient(
+                90deg,
+                #444 0px,
+                #444 2px,
+                transparent 2px,
+                transparent 8px
+            ) !important;
+            height: 80px !important;
+            border-radius: 8px !important;
+        }
+        
+        .record-button {
+            background: #dc2626 !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .record-button:active {
+            transform: scale(0.95) !important;
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(20px) !important;
+            background: rgba(42, 42, 42, 0.9) !important;
+        }
+    </style>
+</head>
+<body class="bg-black">
+    <!-- Background Overlay -->
+    <div class="fixed inset-0 bg-black bg-opacity-60"></div>
+    
+    <!-- Modal Container -->
+    <div class="fixed bottom-0 left-0 right-0 glass-effect border-t border-gray-700 rounded-t-3xl">
+        <!-- Drag Handle -->
+        <div class="flex justify-center pt-3 pb-4">
+            <div class="drag-handle w-12 h-1.5"></div>
+        </div>
+        
+        <!-- Header -->
+        <div class="text-center px-6 pb-6">
+            <h2 class="text-white text-lg font-semibold mb-1">Record Mumble</h2>
+            <p class="text-gray-400 text-sm">Capture your melody ideas • 00:00</p>
+        </div>
+        
+        <!-- Timer -->
+        <div class="text-center pb-4">
+            <div class="text-white text-xl font-mono">00:00.00</div>
+        </div>
+        
+        <!-- Waveform Container -->
+        <div class="px-6 pb-6">
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                <!-- Waveform Visualization -->
+                <div class="waveform mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+                    <div class="text-gray-500 text-sm">Waveform</div>
+                </div>
+                
+                <!-- Playback Controls -->
+                <div class="flex justify-center items-center space-x-6">
+                    <button class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                        <i data-lucide="skip-back" class="w-5 h-5 text-white"></i>
+                    </button>
+                    
+                    <button class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                        <i data-lucide="play" class="w-6 h-6 text-white ml-0.5"></i>
+                    </button>
+                    
+                    <button class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                        <i data-lucide="skip-forward" class="w-5 h-5 text-white"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Record Button -->
+        <div class="flex justify-center pb-6">
+            <button class="record-button w-16 h-16 rounded-full flex items-center justify-center">
+                <div class="w-6 h-6 bg-white rounded-sm"></div>
+            </button>
+        </div>
+        
+        <!-- Bottom Actions -->
+        <div class="flex justify-between items-center px-8 pb-8">
+            <button class="w-12 h-12 rounded-full bg-gray-700 bg-opacity-50 flex items-center justify-center">
+                <i data-lucide="message-circle" class="w-5 h-5 text-white"></i>
+            </button>
+            
+            <button class="bg-red-600 px-8 py-3 rounded-full">
+                <span class="text-white font-semibold">RESUME</span>
+            </button>
+            
+            <button class="w-12 h-12 rounded-full bg-gray-700 bg-opacity-50 flex items-center justify-center">
+                <i data-lucide="settings" class="w-5 h-5 text-white"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Simple interactions
+        document.querySelector('.record-button').addEventListener('click', function() {
+            const icon = this.querySelector('div');
+            if (icon.classList.contains('rounded-sm')) {
+                // Switch to recording (circle)
+                icon.classList.remove('rounded-sm', 'w-6', 'h-6');
+                icon.classList.add('rounded-full', 'w-4', 'h-4');
+            } else {
+                // Switch to stopped (square)
+                icon.classList.remove('rounded-full', 'w-4', 'h-4');
+                icon.classList.add('rounded-sm', 'w-6', 'h-6');
+            }
+        });
+    </script>
+</body>
+</html>

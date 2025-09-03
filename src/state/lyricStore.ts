@@ -33,6 +33,7 @@ interface LyricState {
   currentProjectId: string | null;
   sectionsByProject: Record<string, Section[]>;
   recordingsByProject: Record<string, Recording[]>;
+  freewriteTextByProject: Record<string, string>;
 
   // Recording Modal State
   isRecordingModalVisible: boolean;
@@ -71,6 +72,10 @@ interface LyricState {
   removeRecording: (id: string) => void;
   updateRecordingName: (id: string, name: string) => void;
   
+  // Freewrite Actions
+  updateFreewriteText: (text: string) => void;
+  getFreewriteText: () => string;
+  
   // Selector Helpers
   getSections: () => Section[];
   getRecordings: () => Recording[];
@@ -89,6 +94,7 @@ export const useLyricStore = create<LyricState>()(
       currentProjectId: null,
       sectionsByProject: { '__unassigned__': [] },
       recordingsByProject: { '__unassigned__': [] },
+      freewriteTextByProject: { '__unassigned__': '' },
 
       // --- Recording Modal State ---
       isRecordingModalVisible: false,
@@ -128,6 +134,7 @@ export const useLyricStore = create<LyricState>()(
           projects: [{ id, name, createdAt: now }, ...s.projects],
           sectionsByProject: { ...s.sectionsByProject, [id]: [] },
           recordingsByProject: { ...s.recordingsByProject, [id]: [] },
+          freewriteTextByProject: { ...s.freewriteTextByProject, [id]: '' },
           currentProjectId: id,
         }));
       },
@@ -135,11 +142,13 @@ export const useLyricStore = create<LyricState>()(
       deleteProject: (id: string) => set((s: LyricState) => {
         const { [id]: _, ...sectionsRest } = s.sectionsByProject;
         const { [id]: __, ...recordingsRest } = s.recordingsByProject;
+        const { [id]: ___, ...freewriteRest } = s.freewriteTextByProject;
         return {
           projects: s.projects.filter((p: Project) => p.id !== id),
           currentProjectId: s.currentProjectId === id ? null : s.currentProjectId,
           sectionsByProject: sectionsRest,
           recordingsByProject: recordingsRest,
+          freewriteTextByProject: freewriteRest,
         };
       }),
       renameProject: (id: string, name: string) => set((s: LyricState) => ({
@@ -172,6 +181,7 @@ export const useLyricStore = create<LyricState>()(
             currentProjectId: newProjectId,
             sectionsByProject: { ...state.sectionsByProject, [newProjectId]: [] },
             recordingsByProject: { ...state.recordingsByProject, [newProjectId]: [] },
+            freewriteTextByProject: { ...state.freewriteTextByProject, [newProjectId]: '' },
           }));
           pid = newProjectId;
         }
@@ -317,6 +327,23 @@ export const useLyricStore = create<LyricState>()(
         });
       },
 
+      // --- Freewrite Actions ---
+      updateFreewriteText: (text: string) => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        set({
+          freewriteTextByProject: {
+            ...s.freewriteTextByProject,
+            [pid]: text,
+          },
+        });
+      },
+      getFreewriteText: () => {
+        const s = get();
+        const pid = s.currentProjectId ?? '__unassigned__';
+        return s.freewriteTextByProject[pid] ?? '';
+      },
+
       // --- Selector Helpers ---
       getSections: () => {
         const s = get();
@@ -351,6 +378,7 @@ export const useLyricStore = create<LyricState>()(
         currentProjectId: state.currentProjectId,
         sectionsByProject: state.sectionsByProject,
         recordingsByProject: state.recordingsByProject,
+        freewriteTextByProject: state.freewriteTextByProject,
       }),
       // One-time migration for old flat arrays
       onRehydrateStorage: () => (state: any) => {

@@ -1,0 +1,80 @@
+<!-- Lyric Auto-Scroll Page - Neutral Dark Mode -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lyric Page - Auto-Scroll</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="lyric_page_1.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Georgia&display=swap" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; }
+    body { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div class="lyric-header">
+    <!-- Optional Album Art -->
+    <img class="lyric-album-art" src="https://placehold.co/90x90?text=Art" alt="Album Art" />
+    <div class="lyric-title">Song Title</div>
+    <div class="lyric-artist">Artist Name</div>
+  </div>
+  <div id="lyric-scroll" class="lyric-scroll-area">
+    <div class="lyric-line faded">Line before previous</div>
+    <div class="lyric-line faded">Line before current</div>
+    <div class="lyric-line current">Current lyric line goes here</div>
+    <div class="lyric-line faded">Line after current</div>
+    <div class="lyric-line faded">Line after next</div>
+  </div>
+  <div class="progress-bar-container">
+    <div class="progress-bar">
+      <div id="progress-bar-fill" class="progress-bar-fill" style="width: 40%"></div>
+    </div>
+    <div class="progress-time">
+      <span id="progress-current">1:23</span>
+      <span id="progress-total">3:45</span>
+    </div>
+  </div>
+  <script>
+    // Demo: Simulate auto-scroll and lyric highlight
+    const lines = [
+      "Line before previous",
+      "Line before current",
+      "Current lyric line goes here",
+      "Line after current",
+      "Line after next"
+    ];
+    let currentIdx = 2;
+    const scrollArea = document.getElementById('lyric-scroll');
+    function updateLyrics(idx) {
+      scrollArea.innerHTML = '';
+      lines.forEach((line, i) => {
+        const div = document.createElement('div');
+        div.className = 'lyric-line' + (i === idx ? ' current' : ' faded');
+        div.textContent = line;
+        scrollArea.appendChild(div);
+      });
+      // Auto-scroll to center current line
+      const currentLine = scrollArea.querySelector('.current');
+      if (currentLine) {
+        currentLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    // Demo: Animate lyric change every 2s
+    setInterval(() => {
+      currentIdx = (currentIdx + 1) % lines.length;
+      updateLyrics(currentIdx);
+    }, 2000);
+    updateLyrics(currentIdx);
+    // Demo: Animate progress bar
+    let progress = 40;
+    setInterval(() => {
+      progress = (progress + 2) % 100;
+      document.getElementById('progress-bar-fill').style.width = progress + '%';
+    }, 400);
+  </script>
+</body>
+</html>

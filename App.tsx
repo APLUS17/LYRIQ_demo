@@ -26,6 +26,7 @@ import ProjectsSidebar from './src/components/ProjectsSidebar';
 import IdeasScreen from './src/screens/IdeasScreen';
 import TakesScreen from './src/screens/TakesScreen';
 import ChatEditorScreen from './src/screens/ChatEditorScreen';
+import RecordingsAccordion from './src/components/RecordingsAccordion';
 
 
 
@@ -276,6 +277,7 @@ function MainScreen() {
   const [showChatScreen, setShowChatScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showAddToast, setShowAddToast] = useState(false);
+  const [freewrite, setFreewrite] = useState(false);
   
   // Use memoized selectors to prevent fresh references
   const currentProjectId = useLyricStore(s => s.currentProjectId);
@@ -292,14 +294,13 @@ function MainScreen() {
     return projects.find(p => p.id === currentProjectId) ?? null;
   }, [projects, currentProjectId]);
   
-  const latestRecording = useMemo(() => {
+  const recordings = useMemo(() => {
     const pid = currentProjectId ?? '__unassigned__';
-    const recordings = recordingsByProject[pid] ?? [];
-    return recordings.length > 0 ? recordings[recordings.length - 1] : null;
+    return recordingsByProject[pid] ?? [];
   }, [currentProjectId, recordingsByProject]);
   
   const addSection = useLyricStore(s => s.addSection);
-  const updateSection = useLyricStore(s => s.updateSection);
+  const updateSectionOriginal = useLyricStore(s => s.updateSection);
   const updateSectionType = useLyricStore(s => s.updateSectionType);
   const removeSection = useLyricStore(s => s.removeSection);
   const toggleRecordingModal = useLyricStore(s => s.toggleRecordingModal);
@@ -308,17 +309,56 @@ function MainScreen() {
   const saveCurrentProject = useLyricStore(s => s.saveCurrentProject);
   const toggleStarSection = useLyricStore(s => s.toggleStarSection);
   const renameProject = useLyricStore(s => s.renameProject);
+  const freewriteText = useLyricStore(s => {
+    const pid = s.currentProjectId ?? '__unassigned__';
+    return s.freewriteTextByProject[pid] ?? '';
+  });
+  const updateFreewriteTextOriginal = useLyricStore(s => s.updateFreewriteText);
 
   // Title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState("");
   const lastTitleTapRef = useRef<number>(0);
   
-  // Latest recording playback state
-  const [latestSound, setLatestSound] = useState<Audio.Sound | null>(null);
-  const [isLatestPlaying, setIsLatestPlaying] = useState(false);
-  const [latestCurrentTime, setLatestCurrentTime] = useState(0);
-  const [latestTotalTime, setLatestTotalTime] = useState(0);
+  // Auto-save debouncing
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounced auto-save function
+  const debouncedAutoSave = useCallback(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveCurrentProject();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+  }, [saveCurrentProject]);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Enhanced updateSection with auto-save
+  const updateSection = useCallback((id: string, content: string) => {
+    updateSectionOriginal(id, content);
+    // Trigger debounced auto-save only if content is not empty
+    if (content.trim()) {
+      debouncedAutoSave();
+    }
+  }, [updateSectionOriginal, debouncedAutoSave]);
+  
+  // Enhanced updateFreewriteText with auto-save
+  const updateFreewriteText = useCallback((text: string) => {
+    updateFreewriteTextOriginal(text);
+    // Trigger debounced auto-save only if content is not empty
+    if (text.trim()) {
+      debouncedAutoSave();
+    }
+  }, [updateFreewriteTextOriginal, debouncedAutoSave]);
 
   // Scroll and input refs for focusing on add
   const scrollRef = useRef<ScrollView>(null);
@@ -342,79 +382,11 @@ function MainScreen() {
     const proj = state.projects.find(p => p.id === state.currentProjectId);
     if (proj) {
       renameProject(proj.id, newName);
+      // Auto-save after title change
+      setTimeout(() => saveCurrentProject(), 500);
     }
   }, [titleInput, displayedTitle, currentProject, renameProject, saveCurrentProject]);
 
-  // Latest recording playback handlers
-  const toggleLatestPlayback = useCallback(async () => {
-    if (!latestSound) return;
-    const st = await latestSound.getStatusAsync();
-    if ('isLoaded' in st && st.isLoaded) {
-      if (st.isPlaying) {
-        await latestSound.pauseAsync();
-      } else {
-        await latestSound.playAsync();
-      }
-    }
-  }, [latestSound]);
-
-  const seekLatestBy = useCallback(async (deltaSec: number) => {
-    if (!latestSound) return;
-    const st = await latestSound.getStatusAsync();
-    if ('isLoaded' in st && st.isLoaded && st.durationMillis != null) {
-      const nextMs = Math.max(0, Math.min((st.positionMillis ?? 0) + deltaSec * 1000, st.durationMillis));
-      await latestSound.setPositionAsync(nextMs);
-    }
-  }, [latestSound]);
-
-  // Load latest recording audio
-  useEffect(() => {
-    let cancelled = false;
-    const loadLatest = async () => {
-      try {
-        if (!latestRecording?.uri) {
-          if (latestSound) {
-            await latestSound.unloadAsync();
-            setLatestSound(null);
-          }
-          return;
-        }
-        
-        if (latestSound) {
-          await latestSound.unloadAsync();
-        }
-        
-        const { sound: newSound, status } = await Audio.Sound.createAsync(
-          { uri: latestRecording.uri },
-          { shouldPlay: false, progressUpdateIntervalMillis: 500 }
-        );
-        
-        if (cancelled) {
-          await newSound.unloadAsync();
-          return;
-        }
-        
-        newSound.setOnPlaybackStatusUpdate((s: any) => {
-          if (!s || !s.isLoaded) return;
-          setIsLatestPlaying(Boolean(s.isPlaying));
-          setLatestCurrentTime(Math.floor((s.positionMillis ?? 0) / 1000));
-          setLatestTotalTime(Math.floor((s.durationMillis ?? 0) / 1000));
-        });
-        
-        setLatestSound(newSound);
-        const dur = (status as any)?.durationMillis ?? (latestRecording.duration * 1000) ?? 0;
-        setLatestTotalTime(Math.floor(dur / 1000));
-        setLatestCurrentTime(0);
-      } catch (error) {
-        console.log('Error loading latest recording:', error);
-      }
-    };
-    
-    loadLatest();
-    return () => {
-      cancelled = true;
-    };
-  }, [latestRecording?.uri, latestRecording?.id]);
 
   /* callback to open modal */
   const openRecorder = useCallback(() => toggleRecordingModal(true), [toggleRecordingModal]);
@@ -493,6 +465,111 @@ function MainScreen() {
         </View>
         
         <View className="flex-row items-center" style={{ gap: 12 }}>
+           {/* Freewrite Toggle */}
+           <Pressable
+             onPress={() => {
+               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               
+               if (freewrite) {
+                 // Switching FROM freewrite TO cards - parse and sync to sections
+                 if (freewriteText.trim()) {
+                   const parseSections = (text: string) => {
+                     const lines = text.split('\n');
+                     const parsedSections: { type: string, title?: string, content: string }[] = [];
+                     let currentSection: { type: string, title?: string, content: string } | null = null;
+                     
+                     for (const line of lines) {
+                       const trimmedLine = line.trim();
+                       const sectionMatch = trimmedLine.match(/^\[([^\]]+)\]$/);
+                       
+                       if (sectionMatch) {
+                         // Save previous section if exists
+                         if (currentSection && currentSection.content.trim()) {
+                           parsedSections.push(currentSection);
+                         }
+                         // Start new section
+                         const sectionLabel = sectionMatch[1].toLowerCase();
+                         const knownTypes = ['verse', 'chorus', 'hook', 'bridge'];
+                         const type = knownTypes.includes(sectionLabel) ? sectionLabel : 'verse';
+                         const title = !knownTypes.includes(sectionLabel) ? sectionMatch[1] : undefined;
+                         currentSection = { type, title, content: '' };
+                       } else if (currentSection) {
+                         currentSection.content += (currentSection.content ? '\n' : '') + line;
+                       } else if (trimmedLine) {
+                         // Content without section header - create default verse
+                         if (!currentSection) {
+                           currentSection = { type: 'verse', content: '' };
+                         }
+                         currentSection.content += (currentSection.content ? '\n' : '') + line;
+                       }
+                     }
+                     
+                     // Add final section
+                     if (currentSection && currentSection.content.trim()) {
+                       parsedSections.push(currentSection);
+                     }
+                     
+                     return parsedSections;
+                   };
+                   
+                   const parsedSections = parseSections(freewriteText);
+                   const currentSections = sections;
+                   
+                   // Update/create sections based on parsed content
+                   parsedSections.forEach((parsed, index) => {
+                     if (index < currentSections.length) {
+                       // Update existing section
+                       const existing = currentSections[index];
+                       updateSection(existing.id, parsed.content.trim());
+                       if (parsed.title && existing.title !== parsed.title) {
+                         updateSectionType(existing.id, parsed.type);
+                       }
+                     } else {
+                       // Create new section
+                       const id = addSection(parsed.type);
+                       setTimeout(() => {
+                         updateSection(id, parsed.content.trim());
+                         if (parsed.title) {
+                           // Note: would need updateSectionTitle function for custom titles
+                         }
+                       }, 100 * (index + 1));
+                     }
+                   });
+                   
+                   // Clear freewrite text after parsing
+                   updateFreewriteTextOriginal('');
+                 }
+               } else {
+                 // Switching FROM cards TO freewrite - load sections into freewrite
+                 const currentSections = sections;
+                 if (currentSections.length > 0) {
+                   // Combine all section content into freewrite
+                   const combinedContent = currentSections
+                     .map(section => {
+                       const title = section.title ? `[${section.title}]` : `[${section.type.toUpperCase()}]`;
+                       const content = section.content || '';
+                       return content ? `${title}\n${content}` : '';
+                     })
+                     .filter(content => content.trim())
+                     .join('\n\n');
+                   
+                   if (combinedContent.trim()) {
+                     updateFreewriteTextOriginal(combinedContent);
+                   }
+                 }
+               }
+               
+               setFreewrite(f => !f);
+             }}
+             className="w-12 h-12 rounded-lg items-center justify-center"
+             style={{ backgroundColor: freewrite ? '#374151' : 'rgba(255, 255, 255, 0.05)' }}
+             accessible={true}
+             accessibilityLabel="Toggle Freewrite View"
+             accessibilityRole="button"
+           >
+             <Ionicons name={freewrite ? 'eye-off' : 'eye'} size={20} color="white" />
+           </Pressable>
+
            {/* Save Button */}
            <Pressable
              onPress={() => {
@@ -535,64 +612,37 @@ function MainScreen() {
         </View>
       </View>
 
-      {/* Latest Recording Mini Player */}
-      {latestRecording && (
-        <View className="mx-6 mb-4 px-4 py-3 rounded-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 mr-3">
-              <Text className="text-white text-sm font-medium" numberOfLines={1}>{latestRecording.name}</Text>
-              <Text className="text-gray-400 text-xs mt-1">
-                {Math.floor(latestCurrentTime / 60)}:{(latestCurrentTime % 60).toString().padStart(2, '0')} / {Math.floor(latestTotalTime / 60)}:{(latestTotalTime % 60).toString().padStart(2, '0')}
-              </Text>
-            </View>
-            <View className="flex-row items-center" style={{ gap: 8 }}>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  seekLatestBy(-10);
-                }}
-                className="w-8 h-8 rounded-full items-center justify-center"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                accessible={true}
-                accessibilityLabel="Rewind 10 seconds"
-                accessibilityRole="button"
-              >
-                <Ionicons name="play-back" size={16} color="#9CA3AF" />
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  toggleLatestPlayback();
-                }}
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{ backgroundColor: '#0084FF' }}
-                accessible={true}
-                accessibilityLabel={isLatestPlaying ? "Pause" : "Play"}
-                accessibilityRole="button"
-              >
-                <Ionicons name={isLatestPlaying ? "pause" : "play"} size={18} color="white" style={{ marginLeft: isLatestPlaying ? 0 : 1 }} />
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  seekLatestBy(10);
-                }}
-                className="w-8 h-8 rounded-full items-center justify-center"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                accessible={true}
-                accessibilityLabel="Fast forward 10 seconds"
-                accessibilityRole="button"
-              >
-                <Ionicons name="play-forward" size={16} color="#9CA3AF" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      )}
+      {/* Recordings Accordion */}
+      {!freewrite && <RecordingsAccordion recordings={recordings} />}
 
-       {/* Sections Container with Swipe-Up Gesture */}
-       <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]}>
-        <Animated.View className="flex-1">
+      {/* Conditional Content: Freewrite or Sections */}
+      {freewrite ? (
+        <View className="flex-1 px-6">
+          <TextInput
+            style={{
+              flex: 1,
+              color: '#fff',
+              fontSize: 22,
+              fontWeight: '300',
+              backgroundColor: 'transparent',
+              minHeight: 400,
+              padding: 16,
+              margin: 0,
+              borderWidth: 0,
+              textAlignVertical: 'top',
+            }}
+            value={freewriteText}
+            onChangeText={updateFreewriteText}
+            placeholder="Start writing freely..."
+            placeholderTextColor="#666"
+            multiline
+            autoFocus
+            selectionColor="#fff"
+          />
+        </View>
+      ) : (
+        <PanGestureHandler onGestureEvent={swipeUpGestureHandler} activeOffsetY={[-40, 40]}>
+          <Animated.View className="flex-1">
           <ScrollView 
             ref={scrollRef}
             className="flex-1 px-6" 
@@ -660,7 +710,8 @@ function MainScreen() {
             <Text className="text-gray-400 text-xs mt-2">Swipe up to record</Text>
           </View>
         </Animated.View>
-      </PanGestureHandler>
+        </PanGestureHandler>
+      )}
 
       {/* Recording Modal */}
       <RecordingModal />

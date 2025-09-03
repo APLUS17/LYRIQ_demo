@@ -14,6 +14,7 @@ import Animated, {
   withTiming,
   withSpring,
 } from 'react-native-reanimated';
+import { useLyricStore } from '../state/lyricStore';
 
 interface SidebarProps {
   visible: boolean;
@@ -25,6 +26,10 @@ interface SidebarProps {
 
 export function Sidebar({ visible, onClose, onSelectTool, onSelectProject, onNewSong }: SidebarProps) {
   const insets = useSafeAreaInsets();
+  const projects = useLyricStore(s => s.projects);
+  const currentProjectId = useLyricStore(s => s.currentProjectId);
+  const createProject = useLyricStore(s => s.createProject);
+  const loadProject = useLyricStore(s => s.loadProject);
   
   const translateX = useSharedValue(-100);
   const opacity = useSharedValue(0);
@@ -50,14 +55,6 @@ export function Sidebar({ visible, onClose, onSelectTool, onSelectProject, onNew
   const tools = [
     { id: 'mumbl', name: 'MUMBL', icon: '🎙️', description: 'Auto-humming & melody gen' },
   ];
-
-  const projects = [
-    { id: 'muse2', name: 'MUSE 2.0', lastEdited: '2 days ago' },
-    { id: 'prompt', name: 'PROMPT MASTER', lastEdited: '1 week ago' },
-    { id: 'baes', name: 'BAES STUFF', lastEdited: '2 weeks ago' },
-  ];
-
-  const songs: any[] = [];
 
   return (
     <Modal
@@ -106,7 +103,7 @@ export function Sidebar({ visible, onClose, onSelectTool, onSelectProject, onNew
             <View className="px-3 py-4">
               <Pressable
                 onPress={() => {
-                  onNewSong();
+                  createProject(`Song ${projects.length + 1}`);
                   onClose();
                 }}
                 className="flex-row items-center justify-center p-3 rounded-lg border border-gray-600 bg-transparent active:bg-gray-800"
@@ -122,17 +119,24 @@ export function Sidebar({ visible, onClose, onSelectTool, onSelectProject, onNew
                 <Pressable
                   key={project.id}
                   onPress={() => {
-                    onSelectProject(project.id);
+                    loadProject(project.id);
                     onClose();
                   }}
                   className="flex-row items-center p-3 rounded-lg mb-1 hover:bg-gray-800 active:bg-gray-800"
+                  style={{ backgroundColor: currentProjectId === project.id ? '#374151' : undefined }}
                 >
                   <Ionicons name="musical-notes-outline" size={16} color="#9CA3AF" />
                   <View className="flex-1 ml-3">
                     <Text className="text-gray-200 text-sm" numberOfLines={1}>
                       {project.name}
                     </Text>
+                    <Text className="text-gray-500 text-xs">
+                      {project.savedAt ? new Date(project.savedAt).toLocaleDateString() : 'Unsaved'}
+                    </Text>
                   </View>
+                  {currentProjectId === project.id && (
+                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                  )}
                 </Pressable>
               ))}
 
@@ -154,7 +158,7 @@ export function Sidebar({ visible, onClose, onSelectTool, onSelectProject, onNew
                 </Pressable>
               ))}
 
-              {songs.length === 0 && projects.length === 0 && (
+              {projects.length === 0 && (
                 <View className="px-3 py-8">
                   <Text className="text-gray-400 text-center text-sm">
                     No songs yet. Create your first song above!

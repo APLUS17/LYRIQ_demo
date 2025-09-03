@@ -16,6 +16,7 @@ import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import { Audio } from 'expo-av';
 import { useLyricStore } from '../state/lyricStore';
 import { usePlayerStore } from '../state/playerStore';
 
@@ -71,6 +72,22 @@ export default function PerformanceViewApple() {
     seek, 
     setVolume: setPlayerVolume 
   } = usePlayerStore();
+  
+  // Initialize audio session on mount
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+        });
+      } catch (error) {
+        console.log('Error setting audio mode:', error);
+      }
+    };
+    initAudio();
+  }, []);
   
   const [isScrubbing, setIsScrubbing] = useState(false);
   
@@ -160,6 +177,7 @@ export default function PerformanceViewApple() {
   const remainingTime = durationSecs - currentTime;
   
   const togglePlayback = () => {
+    console.log('Play button pressed, current track:', track?.name, 'isPlaying:', isPlaying);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     playPause();
   };
@@ -281,19 +299,23 @@ export default function PerformanceViewApple() {
           maximumValue={1}
           value={progress}
           onValueChange={(value) => {
-            if (isScrubbing) {
-              const newTimeMs = value * duration;
-              seek(newTimeMs);
-            }
+            if (!isScrubbing) return;
+            const newTimeMs = value * duration;
+            seek(newTimeMs);
           }}
-          onSlidingStart={() => setIsScrubbing(true)}
+          onSlidingStart={() => {
+            console.log('Started scrubbing');
+            setIsScrubbing(true);
+          }}
           onSlidingComplete={(value) => {
+            console.log('Scrub complete, seeking to:', value);
             setIsScrubbing(false);
             onSeek(value);
           }}
           minimumTrackTintColor="#FFFFFF"
           maximumTrackTintColor="rgba(255, 255, 255, 0.3)"
           thumbTintColor="#FFFFFF"
+          disabled={!track}
         />
       </View>
 

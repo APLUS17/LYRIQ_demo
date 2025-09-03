@@ -16,9 +16,10 @@ interface ProjectsSidebarProps {
   onClose: () => void;
   onNavigateToIdeas?: () => void;
   onNavigateToTakes?: () => void;
+  onNavigateToChat?: () => void;
 }
 
-export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, onNavigateToTakes }: ProjectsSidebarProps) {
+export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, onNavigateToTakes, onNavigateToChat }: ProjectsSidebarProps) {
   const insets = useSafeAreaInsets();
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -204,6 +205,20 @@ export default function ProjectsSidebar({ visible, onClose, onNavigateToIdeas, o
                     <Ionicons name="create-outline" size={18} color="#9CA3AF" />
                   </Pressable>
                 </View>
+              </View>
+
+              {/* Chat Assistant */}
+              <View className="px-3 pb-1">
+                <Pressable 
+                  onPress={() => {
+                    onNavigateToChat?.();
+                    onClose();
+                  }}
+                  className="flex-row items-center p-3 rounded-lg hover:bg-gray-800 active:bg-gray-800"
+                >
+                  <Ionicons name="chatbubble-outline" size={16} color="#9CA3AF" />
+                  <Text className="text-gray-200 text-sm ml-3">Chat Assistant</Text>
+                </Pressable>
               </View>
 
               {/* Explore LYRIQs */}

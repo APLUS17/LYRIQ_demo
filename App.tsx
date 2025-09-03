@@ -5,7 +5,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from 'expo-haptics';\nimport { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +25,7 @@ import PerformanceView from './src/components/PerformanceView';
 import ProjectsSidebar from './src/components/ProjectsSidebar';
 import IdeasScreen from './src/screens/IdeasScreen';
 import TakesScreen from './src/screens/TakesScreen';
+import ChatEditorScreen from './src/screens/ChatEditorScreen';
 
 
 
@@ -271,12 +273,14 @@ function MainScreen() {
   const [showProjectsSidebar, setShowProjectsSidebar] = useState(false);
   const [showIdeasScreen, setShowIdeasScreen] = useState(false);
   const [showTakesScreen, setShowTakesScreen] = useState(false);
+  const [showChatScreen, setShowChatScreen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showAddToast, setShowAddToast] = useState(false);
   
   // Use memoized selectors to prevent fresh references
   const currentProjectId = useLyricStore(s => s.currentProjectId);
-  const sectionsByProject = useLyricStore(s => s.sectionsByProject);\n  const recordingsByProject = useLyricStore(s => s.recordingsByProject);
+  const sectionsByProject = useLyricStore(s => s.sectionsByProject);
+  const recordingsByProject = useLyricStore(s => s.recordingsByProject);
   const projects = useLyricStore(s => s.projects);
   
   const sections = useMemo(() => {
@@ -701,6 +705,7 @@ function MainScreen() {
         onClose={() => setShowProjectsSidebar(false)}
         onNavigateToIdeas={() => setShowIdeasScreen(true)}
         onNavigateToTakes={() => setShowTakesScreen(true)}
+        onNavigateToChat={() => setShowChatScreen(true)}
       />
 
       {/* Ideas Screen */}
@@ -714,6 +719,13 @@ function MainScreen() {
       {showTakesScreen && (
         <View className="absolute inset-0 z-50">
           <TakesScreen onBack={() => setShowTakesScreen(false)} />
+        </View>
+      )}
+
+      {/* Chat Screen */}
+      {showChatScreen && (
+        <View className="absolute inset-0 z-50">
+          <ChatEditorScreen onBack={() => setShowChatScreen(false)} />
         </View>
       )}
     </View>

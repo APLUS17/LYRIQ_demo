@@ -8,15 +8,25 @@ import {
   ScrollView,
   TextInput,
   Dimensions,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Slider from '@react-native-community/slider';
-import * as Haptics from 'expo-haptics';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import { Audio } from 'expo-av';
+
+// Platform-specific imports
+let Haptics: any = null;
+let DocumentPicker: any = null;
+let FileSystem: any = null;
+let Audio: any = null;
+
+if ((Platform.OS as string) !== 'web') {
+  Haptics = require('expo-haptics');
+  DocumentPicker = require('expo-document-picker');
+  FileSystem = require('expo-file-system');
+  Audio = require('expo-av').Audio;
+}
 import { useLyricStore } from '../state/lyricStore';
 import { usePlayerStore } from '../state/playerStore';
 
@@ -76,14 +86,16 @@ export default function PerformanceViewApple() {
   // Initialize audio session on mount
   useEffect(() => {
     const initAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-        });
-      } catch (error) {
-        console.log('Error setting audio mode:', error);
+      if (Platform.OS !== 'web' && Audio) {
+        try {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: true,
+          });
+        } catch (error) {
+          console.log('Error setting audio mode:', error);
+        }
       }
     };
     initAudio();
@@ -119,30 +131,50 @@ export default function PerformanceViewApple() {
   // Add audio file function
   const onAddAudio = async () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (Platform.OS !== 'web' && Haptics) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
       
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/aac', 'public.audio'],
-        multiple: false,
-        copyToCacheDirectory: true,
-      });
+      if (Platform.OS === 'web') {
+        // Web: use HTML5 file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'audio/*';
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            loadTrack({ uri: url, name: file.name });
+          }
+        };
+        input.click();
+        return;
+      }
       
-      if (result.canceled) return;
-      
-      const file = result.assets[0];
-      console.log('Selected audio file:', file.name, file.uri);
-      
-      // Copy to app documents so it persists
-      const dest = FileSystem.documentDirectory + file.name.replace(/\s+/g, '_');
-      
-      try {
-        await FileSystem.copyAsync({ from: file.uri, to: dest });
-        console.log('Copied to:', dest);
-        await loadTrack({ uri: dest, name: file.name });
-      } catch {
-        // Fallback: use temp uri
-        console.log('Using temp uri:', file.uri);
-        await loadTrack({ uri: file.uri, name: file.name });
+      if (DocumentPicker && FileSystem) {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/aac', 'public.audio'],
+          multiple: false,
+          copyToCacheDirectory: true,
+        });
+        
+        if (result.canceled) return;
+        
+        const file = result.assets[0];
+        console.log('Selected audio file:', file.name, file.uri);
+        
+        // Copy to app documents so it persists
+        const dest = FileSystem.documentDirectory + file.name.replace(/\s+/g, '_');
+        
+        try {
+          await FileSystem.copyAsync({ from: file.uri, to: dest });
+          console.log('Copied to:', dest);
+          await loadTrack({ uri: dest, name: file.name });
+        } catch {
+          // Fallback: use temp uri
+          console.log('Using temp uri:', file.uri);
+          await loadTrack({ uri: file.uri, name: file.name });
+        }
       }
     } catch (error) {
       console.log('Error adding audio file:', error);
@@ -178,18 +210,24 @@ export default function PerformanceViewApple() {
   
   const togglePlayback = () => {
     console.log('Play button pressed, current track:', track?.name, 'isPlaying:', isPlaying);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS !== 'web' && Haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     playPause();
   };
   
   const seekBackward = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web' && Haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     const newTime = Math.max(0, position - 15000);
     seek(newTime);
   };
   
   const seekForward = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web' && Haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     const newTime = Math.min(duration, position + 15000);
     seek(newTime);
   };
@@ -206,8 +244,8 @@ export default function PerformanceViewApple() {
   return (
     <LinearGradient
       colors={["#8B7355", "#6B5B47", "#4A3F35"]}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
       style={[styles.screen, { paddingTop: insets.top }]}
     >
       {/* Song Header */}
@@ -396,7 +434,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D1810',
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     lineHeight: 12,
   },
   songInfo: {
@@ -465,7 +503,7 @@ const styles = StyleSheet.create({
   },
   lyricPast: {
     fontSize: 28,
-    opacity: 0.5,
+    opacity: 0.6,
     color: 'rgba(255,255,255,0.6)',
   },
   lyricEditing: {

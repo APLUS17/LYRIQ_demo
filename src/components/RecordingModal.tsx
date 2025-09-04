@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, type Ref, useState, useEffect } from 'react'
+import React, { useRef, type Ref, useState, useEffect } from 'react'
 import {
   Pressable,
   View,
@@ -11,9 +11,8 @@ import {
   Dimensions,
   TextInput,
   Alert,
+  Platform,
 } from 'react-native'
-import { Audio } from 'expo-av'
-import * as Haptics from 'expo-haptics'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import Animated, {
   Extrapolation,
@@ -22,12 +21,32 @@ import Animated, {
   useSharedValue,
   withSpring,
   type WithSpringConfig,
-  useAnimatedGestureHandler,
   runOnJS,
 } from 'react-native-reanimated'
-import { PanGestureHandler } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Recorder, type RecordInfo, type RecorderRef } from '@lodev09/expo-recorder'
+
+// Platform-specific imports
+let Audio: any = null;
+let Haptics: any = null;
+let PanGestureHandler: any = null;
+let useAnimatedGestureHandler: any = null;
+let Recorder: any = null;
+let RecordInfo: any = null;
+let RecorderRef: any = null;
+
+if (Platform.OS !== 'web') {
+  const ExpoAV = require('expo-av');
+  Audio = ExpoAV.Audio;
+  Haptics = require('expo-haptics');
+  const GestureHandler = require('react-native-gesture-handler');
+  PanGestureHandler = GestureHandler.PanGestureHandler;
+  const Reanimated = require('react-native-reanimated');
+  useAnimatedGestureHandler = Reanimated.useAnimatedGestureHandler;
+  const ExpoRecorder = require('@lodev09/expo-recorder');
+  Recorder = ExpoRecorder.Recorder;
+  RecordInfo = ExpoRecorder.RecordInfo;
+  RecorderRef = ExpoRecorder.RecorderRef;
+}
 
 import { useLyricStore } from '../state/lyricStore'
 import { validateAudioFile } from '../utils/audioValidation'
@@ -36,7 +55,7 @@ const { height } = Dimensions.get('window')
 const RECORD_BUTTON_SIZE = 64
 const RECORDING_INDICATOR_COLOR = '#DC2626'
 const RECORDING_INDICATOR_SCALE = 0.8
-const MODAL_HEIGHT = height * 0.45
+const MODAL_HEIGHT = Math.floor(height * 0.5)
 
 const SPRING_SHORT_CONFIG: WithSpringConfig = {
   stiffness: 120,
@@ -64,7 +83,7 @@ export default function RecordingModal() {
   const [position, setPosition] = useState(0)
   const [recordingName, setRecordingName] = useState('Record Mumble')
 
-  const recorderRef = useRef<RecorderRef>(null)
+  const recorderRef = useRef<typeof RecorderRef | null>(null)
 
   const scale = useSharedValue(1)
   const sheetHeight = useSharedValue(0)
@@ -77,16 +96,16 @@ export default function RecordingModal() {
     }
   }, [isRecordingModalVisible])
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: any) => {
+  const gestureHandler = useAnimatedGestureHandler ? useAnimatedGestureHandler({
+    onStart: (_: any, context: any) => {
       context.startHeight = sheetHeight.value
     },
-    onActive: (event, context: any) => {
+    onActive: (event: any, context: any) => {
       const deltaY = -event.translationY
       const newHeight = Math.max(0, Math.min(MODAL_HEIGHT, context.startHeight + deltaY))
       sheetHeight.value = newHeight
     },
-    onEnd: (event) => {
+    onEnd: (event: any) => {
       const velocity = -event.velocityY
       
       if (velocity < -500) {
@@ -96,9 +115,9 @@ export default function RecordingModal() {
         sheetHeight.value = withSpring(MODAL_HEIGHT, { damping: 20, stiffness: 300 })
       }
     },
-  })
+  }) : null
 
-    const handleRecordStop = async (record?: RecordInfo) => {
+    const handleRecordStop = async (record?: typeof RecordInfo) => {
       setIsRecording(false)
 
       if (record?.uri) {

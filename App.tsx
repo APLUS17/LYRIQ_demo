@@ -2,20 +2,34 @@ import React, { useState, useCallback, useRef, useMemo, useEffect } from "react"
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
-import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-  useAnimatedGestureHandler,
   runOnJS,
 } from 'react-native-reanimated';
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+
+// Platform-specific imports
+let Haptics: any = null;
+let Audio: any = null;
+let PanGestureHandler: any = null;
+let GestureHandlerRootView: any = View; // Fallback to regular View for web
+let useAnimatedGestureHandler: any = null;
+
+if ((Platform.OS as string) !== 'web') {
+  Haptics = require('expo-haptics');
+  const ExpoAV = require('expo-av');
+  Audio = ExpoAV.Audio;
+  const GestureHandler = require('react-native-gesture-handler');
+  PanGestureHandler = GestureHandler.PanGestureHandler;
+  GestureHandlerRootView = GestureHandler.GestureHandlerRootView;
+  const Reanimated = require('react-native-reanimated');
+  useAnimatedGestureHandler = Reanimated.useAnimatedGestureHandler;
+}
 
 // Import the new modular components
 import { useLyricStore } from './src/state/lyricStore';
@@ -51,12 +65,12 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
     'verse', 'chorus', 'bridge', 'pre-chorus', 'outro', 'tag', 'intro'
   ];
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: any) => {
+  const gestureHandler = useAnimatedGestureHandler ? useAnimatedGestureHandler({
+    onStart: (_: any, context: any) => {
       context.startX = translateX.value;
       context.startY = translateY.value;
     },
-    onActive: (event, context: any) => {
+    onActive: (event: any, context: any) => {
       const isHorizontal = Math.abs(event.translationX) > Math.abs(event.translationY);
       
       if (isHorizontal && context.startX !== undefined) {
@@ -69,7 +83,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         isDragging.value = true;
       }
     },
-    onEnd: (event) => {
+    onEnd: (event: any) => {
       const isHorizontal = Math.abs(event.translationX) > Math.abs(event.translationY);
       
       if (isHorizontal && translateX.value < -100) {
@@ -87,7 +101,7 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         isDragging.value = false;
       }
     },
-  });
+  }) : null;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -147,7 +161,13 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
         {/* Section Type Dropdown */}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if ((Platform.OS as string) !== 'web' && Haptics) {
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               }
+              }
+            }
             setShowDropdown(!showDropdown);
           }}
           className="flex-row items-center bg-gray-700 px-3 py-2 rounded-lg"
@@ -167,7 +187,13 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
           {/* Star Button */}
           <Pressable 
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               }
+              }
+            }
               toggleStarSection(section.id);
             }}
             className="p-2"
@@ -206,7 +232,9 @@ function SectionCard({ section, updateSection, updateSectionType, removeSection,
             <Pressable
               key={type}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
                 updateSectionType(section.id, type);
                 setShowDropdown(false);
               }}
@@ -392,8 +420,8 @@ function MainScreen() {
   const openRecorder = useCallback(() => toggleRecordingModal(true), [toggleRecordingModal]);
 
   /* ✅ ALWAYS call this hook - logic inside handler, not around hook */
-  const swipeUpGestureHandler = useAnimatedGestureHandler({
-    onEnd: (event) => {
+  const swipeUpGestureHandler = useAnimatedGestureHandler ? useAnimatedGestureHandler({
+    onEnd: (event: any) => {
       // Detect upward swipe from bottom area with safe bounds
       const screenHeight = 800; // approximate screen height
       const isFromBottom = event.absoluteY > screenHeight * 0.6; // bottom 40% of screen
@@ -403,7 +431,7 @@ function MainScreen() {
         runOnJS(toggleRecordingModal)(true);
       }
     },
-  });
+  }) : null;
 
   // Conditional rendering based on view mode
   if (isPerformanceMode) {
@@ -421,7 +449,13 @@ function MainScreen() {
           {/* Projects Menu Button */}
           <Pressable
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               }
+              }
+            }
               setShowProjectsSidebar(true);
             }}
             className="w-12 h-12 rounded-lg items-center justify-center"
@@ -468,7 +502,13 @@ function MainScreen() {
            {/* Freewrite Toggle */}
            <Pressable
              onPress={() => {
-               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               if ((Platform.OS as string) !== 'web' && Haptics) {
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               }
+              }
+            }
                
                if (freewrite) {
                  // Switching FROM freewrite TO cards - parse and sync to sections
@@ -573,7 +613,9 @@ function MainScreen() {
            {/* Save Button */}
            <Pressable
              onPress={() => {
-               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+               if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+               }
                saveCurrentProject();
                setShowSaveToast(true);
                setTimeout(() => setShowSaveToast(false), 2000);
@@ -598,7 +640,9 @@ function MainScreen() {
             {/* Performance View Toggle */}
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }
                 togglePerformanceMode(true);
               }}
               className="w-12 h-12 rounded-lg items-center justify-center"
@@ -664,7 +708,13 @@ function MainScreen() {
 
             {/* Add Section Button */}
             <AddSectionButton onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+              if ((Platform.OS as string) !== 'web' && Haptics) {
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+               }
+              }
+            }
               const id = addSection("verse");
               requestAnimationFrame(() => {
                 scrollRef.current?.scrollToEnd({ animated: true });
@@ -689,7 +739,9 @@ function MainScreen() {
           <View className="absolute bottom-4 left-0 right-0 items-center">
             <Pressable 
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                if ((Platform.OS as string) !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                }
                 openRecorder();
               }}
               className="w-16 h-16 rounded-full items-center justify-center"

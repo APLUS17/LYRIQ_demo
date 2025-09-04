@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,6 +9,18 @@ import Animated, {
   withSequence,
   cancelAnimation,
 } from 'react-native-reanimated';
+
+// Platform-specific imports
+let Audio: any = null;
+let InterruptionModeAndroid: any = null;
+let InterruptionModeIOS: any = null;
+
+if (Platform.OS !== 'web') {
+  const ExpoAV = require('expo-av');
+  Audio = ExpoAV.Audio;
+  InterruptionModeAndroid = ExpoAV.InterruptionModeAndroid;
+  InterruptionModeIOS = ExpoAV.InterruptionModeIOS;
+}
 
 interface RecorderProps {
   onStart?: () => void;
@@ -20,9 +31,62 @@ interface RecorderProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Global guard to prevent multiple prepared Recording instances
-let globalRecordingRef: Audio.Recording | null = null;
+let globalRecordingRef: any = null;
 
 type Action = 'idle' | 'preparing' | 'recording' | 'stopping';
+
+// Web Audio API fallback
+class WebAudioRecorder {
+  private mediaRecorder: MediaRecorder | null = null;
+  private stream: MediaStream | null = null;
+  private chunks: Blob[] = [];
+  private onComplete: ((uri: string) => void) | null = null;
+
+  async prepare() {
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.mediaRecorder = new MediaRecorder(this.stream);
+    this.chunks = [];
+    
+    this.mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        this.chunks.push(event.data);
+      }
+    };
+
+    this.mediaRecorder.onstop = () => {
+      const blob = new Blob(this.chunks, { type: 'audio/webm' });
+      const uri = URL.createObjectURL(blob);
+      this.onComplete?.(uri);
+    };
+  }
+
+  async start() {
+    if (this.mediaRecorder) {
+      this.mediaRecorder.start();
+    }
+  }
+
+  async stop(): Promise<string> {
+    return new Promise((resolve) => {
+      if (this.mediaRecorder) {
+        this.onComplete = resolve;
+        this.mediaRecorder.stop();
+        if (this.stream) {
+          this.stream.getTracks().forEach(track => track.stop());
+        }
+      }
+    });
+  }
+
+  cleanup() {
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+    }
+    this.mediaRecorder = null;
+    this.chunks = [];
+  }
+}
 
 export default function Recorder({
   onStart,
@@ -34,7 +98,8 @@ export default function Recorder({
   const [barHeights, setBarHeights] = useState(Array(visualizerBars).fill(4));
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingRef = useRef<any>(null);
+  const webRecorderRef = useRef<WebAudioRecorder | null>(null);
   const actionRef = useRef<Action>('idle');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,8 +108,8 @@ export default function Recorder({
   // Animation values
   const buttonScale = useSharedValue(1);
 
-  // Safer, explicit options (works better than presets on some devices)
-  const RECORDING_OPTIONS: Audio.RecordingOptions = {
+  // Platform-specific recording options
+  const RECORDING_OPTIONS = Platform.OS !== 'web' ? {
     android: {
       extension: '.m4a',
       outputFormat: Audio.AndroidOutputFormat.MPEG_4,
@@ -61,9 +126,9 @@ export default function Recorder({
       bitRate: 128000,
       outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
     },
-    web: undefined as any, // not used in native build
+    web: undefined as any,
     isMeteringEnabled: false,
-  };
+  } : null;
 
   // Clean up everything, including any prepared/recording instance
   const resetRecorder = useCallback(async () => {
@@ -80,53 +145,67 @@ export default function Recorder({
     buttonScale.value = withTiming(1);
     setBarHeights(Array(visualizerBars).fill(4));
 
-    const stop = async (rec: Audio.Recording | null) => {
-      if (!rec) return;
-      try {
-        const st = await rec.getStatusAsync();
-        if (st.canRecord || st.isRecording || !st.isDoneRecording) {
-          await rec.stopAndUnloadAsync();
-        }
-      } catch {
-        // best-effort cleanup
+    if (Platform.OS === 'web') {
+      // Web cleanup
+      if (webRecorderRef.current) {
+        webRecorderRef.current.cleanup();
+        webRecorderRef.current = null;
       }
-    };
+    } else {
+      // Native cleanup
+      const stop = async (rec: any) => {
+        if (!rec) return;
+        try {
+          const st = await rec.getStatusAsync();
+          if (st.canRecord || st.isRecording || !st.isDoneRecording) {
+            await rec.stopAndUnloadAsync();
+          }
+        } catch {
+          // best-effort cleanup
+        }
+      };
 
-    await stop(recordingRef.current);
-    await stop(globalRecordingRef);
+      await stop(recordingRef.current);
+      await stop(globalRecordingRef);
 
-    recordingRef.current = null;
-    globalRecordingRef = null;
+      recordingRef.current = null;
+      globalRecordingRef = null;
 
-    // optionally release record mode so other audio can play later
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        shouldDuckAndroid: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-    } catch {}
+      // optionally release record mode so other audio can play later
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          shouldDuckAndroid: true,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+        });
+      } catch {}
+    }
   }, [buttonScale, visualizerBars]);
 
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Audio.requestPermissionsAsync();
-        setPermissionGranted(status === 'granted');
-        if (status === 'granted') {
-          await Audio.setAudioModeAsync({
-            allowsRecordingIOS: true,
-            playsInSilentModeIOS: true,
-            interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-            shouldDuckAndroid: true,
-            interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-            playThroughEarpieceAndroid: false,
-            staysActiveInBackground: false,
-          });
+        if (Platform.OS === 'web') {
+          // Web permissions are handled on first recording attempt
+          setPermissionGranted(true);
+        } else {
+          const { status } = await Audio.requestPermissionsAsync();
+          setPermissionGranted(status === 'granted');
+          if (status === 'granted') {
+            await Audio.setAudioModeAsync({
+              allowsRecordingIOS: true,
+              playsInSilentModeIOS: true,
+              interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+              shouldDuckAndroid: true,
+              interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+              playThroughEarpieceAndroid: false,
+              staysActiveInBackground: false,
+            });
+          }
         }
       } catch (e) {
         console.error('Failed to setup audio:', e);
@@ -144,36 +223,48 @@ export default function Recorder({
     actionRef.current = 'preparing';
 
     try {
-      const perm = await Audio.getPermissionsAsync();
-      if (perm.status !== 'granted') {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission required', 'Microphone access is needed to record.');
-          actionRef.current = 'idle';
-          return;
+      if (Platform.OS === 'web') {
+        // Web Audio API
+        await resetRecorder();
+        
+        const webRecorder = new WebAudioRecorder();
+        await webRecorder.prepare();
+        await webRecorder.start();
+        
+        webRecorderRef.current = webRecorder;
+      } else {
+        // Native Audio
+        const perm = await Audio.getPermissionsAsync();
+        if (perm.status !== 'granted') {
+          const { status } = await Audio.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission required', 'Microphone access is needed to record.');
+            actionRef.current = 'idle';
+            return;
+          }
         }
+
+        // Make sure nothing is lingering
+        await resetRecorder();
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          shouldDuckAndroid: true,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: false,
+        });
+
+        const rec = new Audio.Recording();
+        // Avoid presets, use explicit options
+        await rec.prepareToRecordAsync(RECORDING_OPTIONS);
+        await rec.startAsync();
+
+        recordingRef.current = rec;
+        globalRecordingRef = rec;
       }
-
-      // Make sure nothing is lingering
-      await resetRecorder();
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        shouldDuckAndroid: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-
-      const rec = new Audio.Recording();
-      // Avoid presets, use explicit options
-      await rec.prepareToRecordAsync(RECORDING_OPTIONS);
-      await rec.startAsync();
-
-      recordingRef.current = rec;
-      globalRecordingRef = rec;
 
       setIsRecording(true);
       setTime(0);
@@ -201,25 +292,38 @@ export default function Recorder({
   }, [onStart, resetRecorder, buttonScale]);
 
   const stopRecording = useCallback(async () => {
-    if (actionRef.current !== 'recording' || !recordingRef.current) return;
+    if (actionRef.current !== 'recording') return;
+    if (Platform.OS === 'web' && !webRecorderRef.current) return;
+    if (Platform.OS !== 'web' && !recordingRef.current) return;
+    
     actionRef.current = 'stopping';
 
     try {
-      const rec = recordingRef.current;
-      // make sure it actually started before stopping
-      try {
-        const st = await rec.getStatusAsync();
-        if (!st.isRecording && !st.canRecord) {
-          // not actually recording; bail safely
-          await resetRecorder();
-          setIsRecording(false);
-          actionRef.current = 'idle';
-          return;
-        }
-      } catch {}
+      let uri: string | null = null;
 
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
+      if (Platform.OS === 'web') {
+        // Web Audio API
+        if (webRecorderRef.current) {
+          uri = await webRecorderRef.current.stop();
+        }
+      } else {
+        // Native Audio
+        const rec = recordingRef.current;
+        // make sure it actually started before stopping
+        try {
+          const st = await rec.getStatusAsync();
+          if (!st.isRecording && !st.canRecord) {
+            // not actually recording; bail safely
+            await resetRecorder();
+            setIsRecording(false);
+            actionRef.current = 'idle';
+            return;
+          }
+        } catch {}
+
+        await rec.stopAndUnloadAsync();
+        uri = rec.getURI();
+      }
 
       setIsRecording(false);
       await resetRecorder();

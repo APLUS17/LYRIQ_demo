@@ -1,15 +1,17 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-} from 'react-native-reanimated';
 import Slider from '@react-native-community/slider';
+
+// Platform-specific imports
+let Haptics: any = null;
+let Audio: any = null;
+
+if ((Platform.OS as string) !== 'web') {
+  Haptics = require('expo-haptics');
+  const ExpoAV = require('expo-av');
+  Audio = ExpoAV.Audio;
+}
 
 type Recording = {
   id: string;
@@ -19,14 +21,13 @@ type Recording = {
   createdAt: string;
 };
 
-const AnimatedView = Animated.createAnimatedComponent(View);
 
 function RecordingPlayer({ recording, isActive, onSelect }: {
   recording: Recording;
   isActive: boolean;
   onSelect: () => void;
 }) {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
@@ -37,7 +38,7 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
     if (!sound) return;
     const status = await sound.getStatusAsync();
     if ('isLoaded' in status && status.isLoaded && status.durationMillis != null) {
-      const preciseSeconds = Math.round(seconds * 10) / 10; // Align to 0.1s precision
+      const preciseSeconds = Math.round(seconds); // Align to 1s precision
       const positionMs = Math.max(0, Math.min(preciseSeconds * 1000, status.durationMillis));
       await sound.setPositionAsync(positionMs);
     }
@@ -83,6 +84,11 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
           await sound.unloadAsync();
         }
         
+        if (!Audio) {
+          console.log('Audio not available on web platform');
+          return;
+        }
+        
         const { sound: newSound, status } = await Audio.Sound.createAsync(
           { uri: recording.uri },
           { shouldPlay: false, progressUpdateIntervalMillis: 500 }
@@ -98,13 +104,13 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
           setIsPlaying(Boolean(s.isPlaying));
           const currentSec = (s.positionMillis ?? 0) / 1000;
           const totalSec = (s.durationMillis ?? 0) / 1000;
-          setCurrentTime(Math.round(currentSec * 10) / 10); // Round to 0.1s precision
-          setTotalTime(Math.round(totalSec * 10) / 10);
+          setCurrentTime(Math.round(currentSec)); // Round to 1s precision
+          setTotalTime(Math.round(totalSec));
         });
         
         setSound(newSound);
         const duration = (status as any)?.durationMillis ?? (recording.duration * 1000) ?? 0;
-        setTotalTime(Math.round((duration / 1000) * 10) / 10);
+        setTotalTime(Math.round(duration / 1000));
         setCurrentTime(0);
       } catch (error) {
         console.log('Error loading recording:', error);
@@ -128,8 +134,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
   }, [currentTime, isScrubbing]);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const totalSecs = Math.floor(seconds);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -149,7 +156,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
       {/* Recording Row */}
       <Pressable
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (Platform.OS !== 'web' && Haptics) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
           onSelect();
         }}
         style={{
@@ -178,7 +187,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }
                 togglePlayback();
               }}
               style={{
@@ -222,20 +233,26 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
             <Slider
               style={{ height: 40 }}
               minimumValue={0}
-              maximumValue={totalTime || 1}
-              value={scrubValue}
+              maximumValue={Math.floor(totalTime) || 1}
+              value={Math.floor(scrubValue)}
               onValueChange={(value) => {
                 setScrubValue(value);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
               }}
               onSlidingStart={() => {
                 setIsScrubbing(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
               }}
               onSlidingComplete={(value) => {
                 setIsScrubbing(false);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                seekTo(Math.round(value * 10) / 10);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }
+                seekTo(Math.round(value));
               }}
               minimumTrackTintColor="#0084FF"
               maximumTrackTintColor="rgba(255, 255, 255, 0.2)"
@@ -251,7 +268,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
                 seekBy(-15);
               }}
               style={{
@@ -271,7 +290,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
             
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                }
                 togglePlayback();
               }}
               style={{
@@ -296,7 +317,9 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
             
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS !== 'web' && Haptics) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
                 seekBy(15);
               }}
               style={{
@@ -323,8 +346,6 @@ function RecordingPlayer({ recording, isActive, onSelect }: {
 export default function RecordingsAccordion({ recordings }: { recordings: Recording[] }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeRecordingId, setActiveRecordingId] = useState<string | null>(null);
-  
-  const expandedHeight = useSharedValue(0);
 
   const toggleAccordion = useCallback(() => {
     setIsExpanded(prev => {
@@ -340,19 +361,6 @@ export default function RecordingsAccordion({ recordings }: { recordings: Record
     setActiveRecordingId(prev => prev === recordingId ? null : recordingId);
   }, []);
 
-  // Animate container height
-  useEffect(() => {
-    if (isExpanded) {
-      const baseHeight = 60; // Header height
-      const recordingsHeight = recordings.length * 50;
-      const activePlayerHeight = activeRecordingId ? 140 : 0;
-      const totalHeight = baseHeight + recordingsHeight + activePlayerHeight;
-      
-      expandedHeight.value = withSpring(totalHeight, { damping: 18, stiffness: 180 });
-    } else {
-      expandedHeight.value = withTiming(0, { duration: 250 });
-    }
-  }, [isExpanded, recordings.length, activeRecordingId]);
 
   if (recordings.length === 0) return null;
 
@@ -372,10 +380,6 @@ export default function RecordingsAccordion({ recordings }: { recordings: Record
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
-  const expandedStyle = useAnimatedStyle(() => ({
-    height: expandedHeight.value,
-    opacity: withTiming(isExpanded ? 1 : 0, { duration: 200 }),
-  }));
 
   return (
     <View style={{ marginHorizontal: 24, marginBottom: 16 }}>
@@ -392,7 +396,9 @@ export default function RecordingsAccordion({ recordings }: { recordings: Record
         {/* Header - Always Visible */}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (Platform.OS !== 'web' && Haptics) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
             toggleAccordion();
           }}
           style={{
@@ -426,19 +432,16 @@ export default function RecordingsAccordion({ recordings }: { recordings: Record
         </Pressable>
 
         {/* Expandable Content */}
-        <AnimatedView 
-          style={[
-            {
-              overflow: 'hidden',
+        {isExpanded && (
+          <View 
+            style={{
               backgroundColor: 'rgba(255, 255, 255, 0.02)',
-            },
-            expandedStyle
-          ]}
-        >
-          <ScrollView 
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: 300 }}
+            }}
           >
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: Math.floor(Math.min(recordings.length * 80 + (activeRecordingId ? 140 : 0), 400)) }}
+            >
             {sortedRecordings.map((recording, index) => (
               <View key={recording.id}>
                 {index > 0 && (
@@ -451,8 +454,9 @@ export default function RecordingsAccordion({ recordings }: { recordings: Record
                 />
               </View>
             ))}
-          </ScrollView>
-        </AnimatedView>
+            </ScrollView>
+          </View>
+        )}
       </View>
     </View>
   );

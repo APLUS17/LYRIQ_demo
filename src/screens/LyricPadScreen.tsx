@@ -4,8 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLyricStore } from '../state/lyricStore';
 import { LyricSection } from '../components/LyricSection';
-import { Sidebar } from '../components/Sidebar';
-import { MumbleRecorder } from '../components/MumbleRecorder';
 
 interface LyricPadScreenProps {
   onBack?: () => void;
@@ -25,7 +23,6 @@ export function LyricPadScreen({ onBack }: LyricPadScreenProps = {}) {
   });
   const updateFreewriteText = useLyricStore(s => s.updateFreewriteText);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
   const [freewrite, setFreewrite] = useState(false); // Freewrite view toggle
 
   const sectionTypes = [
@@ -45,12 +42,6 @@ export function LyricPadScreen({ onBack }: LyricPadScreenProps = {}) {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between mb-8">
-          <Pressable
-            onPress={() => setShowSidebar(true)}
-            className="p-2 -ml-2 rounded-lg"
-          >
-            <Ionicons name="menu" size={24} color={freewrite ? '#fff' : '#1F2937'} />
-          </Pressable>
           
           <View className="flex-1 ml-4">
             <Text className="text-2xl font-light" style={{ color: freewrite ? '#fff' : '#1F2937' }}>
@@ -133,26 +124,6 @@ export function LyricPadScreen({ onBack }: LyricPadScreenProps = {}) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Mumble Recorder (always accessible) */}
-      <MumbleRecorder />
-
-      {/* Sidebar */}
-      <Sidebar
-        visible={showSidebar}
-        onClose={() => setShowSidebar(false)}
-        onSelectTool={(tool) => {
-          console.log('Selected tool:', tool);
-          // Handle tool selection (e.g., open mumble recorder)
-        }}
-        onSelectProject={(project) => {
-          console.log('Selected project:', project);
-          // Project selection is now handled directly in Sidebar
-        }}
-        onNewSong={() => {
-          console.log('New song');
-          // Project creation is now handled directly in Sidebar
-        }}
-      />
     </View>
   );
 }

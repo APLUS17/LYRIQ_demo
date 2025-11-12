@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyric Pad - iOS 26</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.css">
+  <link rel="stylesheet" href="ios26_theme.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    .section-card {
+      background: var(--section-card);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.25rem 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 18px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+    }
+    .add-section {
+      background: var(--surface);
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      margin-right: 12px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      padding: 0.6rem 1.4rem;
+      display: inline-flex;
+      align-items: center;
+      transition: background 0.16s;
+    }
+    .add-section:hover {
+      background: var(--accent-muted);
+      color: #fff;
+    }
+    .toggle {
+      background: #23272a;
+      border-radius: 100px;
+      padding: 8px;
+      color: var(--accent);
+      float: right;
+      cursor: pointer;
+      margin-left: 14px;
+    }
+    .toggle i { color: var(--accent); font-size: 1.25rem; }
+    .lyric-header { font-size: 2rem; font-weight: 300; color: var(--text-strong); letter-spacing: -1px; margin-bottom: 32px; display: flex; align-items: center; }
+    .section-type { color: var(--accent); font-size: 0.96rem; text-transform: capitalize; margin-bottom: 6px; font-weight: 500; }
+    .section-content { color: var(--text); font-size: 1.11rem; background: none; border: none; width: 100%; min-height: 74px; margin: 0; outline: none; }
+    .surface { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; }
+    .empty-state { color: var(--text-muted); text-align: center; margin: 40px 0 0 0; }
+    ::placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
+  </style>
+</head>
+<body>
+<div style="max-width:600px;margin:0 auto;padding:3.5vw 3.5vw 0 3.5vw;">
+  <div class="lyric-header">
+    <span>Lyric Pad</span>
+    <button class="toggle" title="Toggle Freewrite"><i class="fa fa-eye"></i></button>
+  </div>
+  <div class="section-card">
+    <div class="section-type">Verse</div>
+    <textarea class="section-content" placeholder="Write your lyrics...">Sample lyrics go here...</textarea>
+  </div>
+  <div class="section-card">
+    <div class="section-type">Chorus</div>
+    <textarea class="section-content" placeholder="Write your lyrics..."></textarea>
+  </div>
+  <button class="add-section"><i class="fa fa-plus"></i>&nbsp; Add Section</button>
+  <button class="add-section"><i class="fa fa-plus"></i>&nbsp; Add Chorus</button>
+  <div class="empty-state">Your lyrics will appear here.<br>Tap a button above to get started.</div>
+</div>
+<!-- Fontawesome for icons (quick demo purposes)-->
+<script src="https://kit.fontawesome.com/8e04aac434.js" crossorigin="anonymous"></script>
+</body>
+</html>

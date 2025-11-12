@@ -35,17 +35,21 @@ interface LyricState {
   recordingsByProject: Record<string, Recording[]>;
   freewriteTextByProject: Record<string, string>;
 
+  // Onboarding State
+  hasCompletedOnboarding: boolean;
+  completeOnboarding: () => void;
+
   // Recording Modal State
   isRecordingModalVisible: boolean;
   toggleRecordingModal: (value?: boolean) => void;
-  
+
   // Toast State
   toastVisible: boolean;
   toastMessage: string;
   toastType: 'success' | 'error' | 'info';
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
-  
+
   // Performance Mode State
   isPerformanceMode: boolean;
   togglePerformanceMode: (value?: boolean) => void;
@@ -95,6 +99,10 @@ export const useLyricStore = create<LyricState>()(
       sectionsByProject: { '__unassigned__': [] },
       recordingsByProject: { '__unassigned__': [] },
       freewriteTextByProject: { '__unassigned__': '' },
+
+      // --- Onboarding State ---
+      hasCompletedOnboarding: false,
+      completeOnboarding: () => set({ hasCompletedOnboarding: true }),
 
       // --- Recording Modal State ---
       isRecordingModalVisible: false,
@@ -373,12 +381,13 @@ export const useLyricStore = create<LyricState>()(
     {
       name: 'lyriq-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         projects: state.projects,
         currentProjectId: state.currentProjectId,
         sectionsByProject: state.sectionsByProject,
         recordingsByProject: state.recordingsByProject,
         freewriteTextByProject: state.freewriteTextByProject,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
       }),
       // One-time migration for old flat arrays
       onRehydrateStorage: () => (state: any) => {

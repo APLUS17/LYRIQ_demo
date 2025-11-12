@@ -1,0 +1,3 @@
+:root { --font-main: "Inter", Arial, sans-serif; --background: #111113; --surface: #16171a; --text-strong: #fff; --text: #e3e4e6; --text-muted: #8a929f; --accent: #00c9c9; --accent-muted: #11394a; --section-card: #181b1f; --border: #232427; --radius: 16px; --header-height: 72px; }
+body { font-family: var(--font-main) !important; background: var(--background) !important; color: var(--text) !important; }
+

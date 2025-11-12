@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding - iOS 26</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.css">
+  <link rel="stylesheet" href="ios26_theme.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    .step-indicator { display: flex; justify-content: center; gap: 8px; margin-top: 36px; }
+    .step-dot { width: 14px; height: 14px; border-radius: 7px; background: var(--surface); opacity: 0.3; }
+    .step-dot.active { background: var(--accent); opacity: 1; }
+    .headline { font-size: 2.2rem; font-weight: 700; color: var(--text-strong); text-align: center; margin: 80px 0 36px 0; letter-spacing: -1px; }
+    .skip-btn { color: var(--text-muted); float: right; margin: 22px 12px 0 0; background: none; border: none; font-family: inherit; letter-spacing: 0.02em; font-size: 1rem; }
+    .onboard-btn { background: var(--accent); color: #fff; border: none; border-radius: 32px; padding: 16px 38px; font-size: 1.18rem; font-weight: 600; margin: 52px auto 0 auto; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.09); transition: background 0.13s; }
+    .onboard-btn:hover { background: #00b2b2; }
+    html, body { min-height: 100vh; background: var(--background); }
+  </style>
+</head>
+<body>
+  <button class="skip-btn">SKIP</button>
+  <div class="headline">WRITE. REFINE.<br>RECORD.</div>
+  <div class="step-indicator">
+    <div class="step-dot"></div><div class="step-dot"></div><div class="step-dot active"></div>
+  </div>
+  <button class="onboard-btn">CONTINUE</button>
+</body>
+</html>

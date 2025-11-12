@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Lyrics • LyriQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .modal-bounce-in {animation: modalBounceIn 0.7s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes modalBounceIn {0%{opacity:0;transform:scale(.93) translateY(40px);}85%{opacity:1;transform:scale(1.03) translateY(-3px);}100%{transform:none;}}
+  </style>
+</head>
+<body style="background:rgba(7,10,14,0.88); color:var(--foreground); font-family:var(--font-sans);">
+  <div class="fixed inset-0 flex items-center justify-center z-50" style="backdrop-filter:blur(7px); background:rgba(8,12,20,0.84);">
+    <div class="modal-bounce-in bg-[var(--secondary)] rounded-2xl shadow-2xl max-w-lg w-full p-7 border border-[var(--border)]">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Edit Lyrics</h2>
+        <button aria-label="Close lyrics modal" class="bg-[var(--background)] rounded-full p-2 shadow hover:scale-110 active:scale-95 focus:ring-2 focus:ring-[var(--primary)] transition"><i data-lucide="x"></i></button>
+      </div>
+      <textarea rows="7" class="w-full rounded-lg p-3 text-base leading-relaxed bg-[var(--background)] text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)] transition mb-6" aria-label="Lyrics Editor">Starlit road, where midnight grows,
+Silent chords the night bestows,
+Let the echoes take control,
+Sing aloud and free your soul.</textarea>
+      <div class="flex gap-3 mt-2">
+        <button class="flex-1 rounded-lg bg-[var(--primary)] py-3 font-semibold text-[var(--background)] hover:scale-105 focus:scale-105 transition" aria-label="Save Lyrics">Save</button>
+        <button class="flex-1 rounded-lg bg-[var(--muted)] py-3 font-semibold text-[var(--foreground)] hover:scale-102 focus:scale-105 transition" aria-label="Cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons()</script>
+</body>
+</html>

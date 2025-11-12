@@ -1,0 +1,73 @@
+:root {
+  --background: #070A0E;
+  --foreground: #F4F6FB;
+  --primary: #08E0C6;
+  --primary-accent: #13B7B0;
+  --secondary: #16191D;
+  --secondary-foreground: #A7B3C4;
+  --muted: #23272F;
+  --muted-foreground: #4D586B;
+  --accent: #19D3B3;
+  --accent-foreground: #23272F;
+  --destructive: #FD3D5C;
+  --destructive-foreground: #F4F6FB;
+  --border: #23272F;
+  --input: #23272F;
+  --ring: #08E0C6;
+  --shadow-lg: 0 4px 40px 0 rgb(8,224,198,0.15);
+  --font-sans: 'Inter', 'Roboto', 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 1rem;
+  --spacing: 1rem;
+  --transition: 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+body {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family: var(--font-sans) !important;
+  letter-spacing: 0.01em !important;
+  min-height: 100vh !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground) !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+input, select, textarea {
+  background: var(--input) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  font-family: var(--font-sans) !important;
+  transition: box-shadow var(--transition), border-color var(--transition) !important;
+}
+
+button, .btn {
+  background: var(--primary) !important;
+  color: var(--background) !important;
+  border-radius: var(--radius) !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  padding: 0.5rem 1.5rem !important;
+  box-shadow: var(--shadow-lg) !important;
+  transition: background var(--transition), color var(--transition) !important;
+}
+
+button:active, .btn:active {
+  background: var(--primary-accent) !important;
+  color: var(--foreground) !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: var(--secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 8px;
+}

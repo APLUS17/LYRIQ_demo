@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mumble • LyriQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .chat-in {animation: chatIn .75s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes chatIn {0%{opacity:0;transform:translateY(24px) scale(.95);}100%{transform:none;opacity:1;}}
+    .suggest-bounce {animation:suggestBounce .62s cubic-bezier(.32,0,.67,0) both;}
+    @keyframes suggestBounce {0%{opacity:0;transform:scale(.9);}70%{opacity:.98;transform:scale(1.04);}100%{opacity:1;transform:none;}}
+    .fade-in {animation:fadeIn .8s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes fadeIn {0% {opacity:0;transform:translateY(30px) scale(.98);} 100%{opacity:1;transform:none;}}
+  </style>
+</head>
+<body class="fade-in" style="background:var(--background); color:var(--foreground); font-family:var(--font-sans); min-height:100vh;">
+  <header class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] fade-in" style="animation-delay:0.08s;">
+    <span class="font-bold text-xl">Mumble Assistant</span>
+    <button aria-label="Open Mumble settings" class="p-2 hover:scale-110 transition-transform focus:ring-2 focus:ring-[var(--primary)]" style="color:var(--primary)"><i data-lucide="sparkles"></i></button>
+  </header>
+  <main class="flex-1 flex flex-col px-2 pt-4 pb-28 max-w-2xl mx-auto gap-3 relative fade-in" style="animation-delay:.18s;">
+    <div class="flex flex-col items-center mb-2 fade-in" style="animation-delay:.22s;">
+      <img src="https://placehold.co/56x56/08E0C6/FFF?text=AI" class="rounded-full shadow-xl mb-1" alt="AI avatar" style="box-shadow:0 2px 16px #08e0c6ad;"/>
+      <div class="text-sm mb-2 text-[var(--primary)]">How can I help with your lyrics?</div>
+    </div>
+    <div class="flex flex-col gap-2 mb-3">
+      <div class="flex items-start max-w-[85%] self-start bg-[var(--muted)] rounded-lg p-3 shadow chat-in" style="animation-delay:.35s;">
+        <i data-lucide="lucide-bot" class="mr-2 text-[var(--primary)]"></i>
+        <span>Suggest a rhyme for “midnight”?<br/><span class="text-xs text-[var(--muted-foreground)] mt-1 block">AI</span></span>
+      </div>
+      <div class="flex items-end max-w-[85%] self-end bg-[var(--primary)] text-black rounded-lg p-3 shadow chat-in" style="animation-delay:.38s;">
+        <span>I want a rhyme for “midnight”</span>
+        <i data-lucide="user" class="ml-2 text-[var(--foreground)]"></i>
+      </div>
+      <div class="flex items-start max-w-[85%] self-start bg-[var(--muted)] rounded-lg p-3 shadow chat-in" style="animation-delay:.46s;">
+        <i data-lucide="lucide-bot" class="mr-2 text-[var(--primary)]"></i>
+        <span>How about “alight,” “despite,” or “nightlight”?</span>
+      </div>
+    </div>
+    <div class="rounded-xl bg-[var(--secondary)] p-4 mb-6 shadow fade-in" style="animation-delay:.63s;">
+      <div class="flex items-center gap-2 mb-2"><i data-lucide="music"></i><span class="font-semibold">Lyric Editor</span></div>
+      <textarea rows="3" class="bg-[var(--muted)] p-2 w-full rounded resize-none text-sm transition-all focus:ring-2 focus:ring-[var(--primary)]" placeholder="Write or edit your lyrics here..." aria-label="Lyrics Editor"></textarea>
+      <div class="flex justify-end mt-1 gap-2 text-xs"><button class="text-[var(--primary)]">Save</button><button class="text-[var(--muted-foreground)]">Clear</button></div>
+    </div>
+    <section class="mb-4 fade-in" style="animation-delay:.81s;">
+      <h3 class="text-xs text-[var(--muted-foreground)] mb-1">Suggestions</h3>
+      <div class="flex gap-2 flex-wrap">
+        <button class="bg-[var(--primary)] text-[var(--background)] px-3 py-1 rounded-full text-xs font-semibold suggest-bounce" aria-label="Find rhymes">Find rhymes</button>
+        <button class="bg-[var(--secondary)] text-[var(--primary)] px-3 py-1 rounded-full text-xs font-semibold suggest-bounce" aria-label="Suggest a next line">Suggest a next line</button>
+        <button class="bg-[var(--secondary)] text-[var(--primary)] px-3 py-1 rounded-full text-xs font-semibold suggest-bounce" aria-label="Make it more poetic">Make it more poetic</button>
+      </div>
+    </section>
+  </main>
+  <footer class="fixed bottom-0 left-0 w-full bg-[var(--background)] border-t border-[var(--border)] px-2 py-3 flex gap-2 items-center max-w-2xl mx-auto fade-in" style="animation-delay:.9s;">
+    <input type="text" placeholder="Type your message..." class="flex-1 px-4 py-2 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] font-normal outline-none border-none transition-all focus:ring-2 focus:ring-[var(--primary)]" aria-label="Chat input"/>
+    <button class="rounded-lg py-2 px-5 bg-[var(--primary)] text-[var(--background)] font-semibold transition hover:scale-105 active:scale-95 flex items-center gap-2" aria-label="Send to Mumble"><i data-lucide="send"></i>Send</button>
+  </footer>
+  <script>lucide.createIcons()</script>
+</body>
+</html>

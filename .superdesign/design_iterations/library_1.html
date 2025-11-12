@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Library • LyriQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .fade-in {animation:fadeIn .8s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes fadeIn {0% {opacity:0;transform:translateY(30px) scale(.98);} 100%{opacity:1;transform:none;}}
+    .card-bounce {animation:cardBounce .68s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes cardBounce {0%{opacity:0;transform:scale(.94) translateY(32px);} 85%{opacity:1;transform:scale(1.02) translateY(-4px);} 100%{opacity:1;transform:none;}}
+  </style>
+</head>
+<body class="fade-in" style="background:var(--background); color:var(--foreground); font-family:var(--font-sans); min-height:100vh;">
+  <header class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] fade-in" style="animation-delay:.12s">
+    <div class="flex items-center gap-3">
+      <img src="https://placehold.co/44x44/23272F/FFF?text=A" class="rounded-full h-11 w-11 border border-[var(--border)]" alt="User avatar"/>
+      <span class="font-semibold text-lg">Alex</span>
+    </div>
+    <button aria-label="Profile Settings" class="p-2 hover:scale-110 transition-transform" style="color:var(--primary); background:none;"><i data-lucide="settings"></i></button>
+  </header>
+  <main class="px-4 pb-24 max-w-2xl mx-auto fade-in" style="animation-delay:.28s;">
+    <div class="flex gap-6 justify-between mt-6 mb-6 font-semibold text-[var(--muted-foreground)] fade-in" style="animation-delay:.39s;">
+      <button aria-label="Playlists" class="border-b-2 border-[var(--primary)] pb-1 text-[var(--primary)] transition focus:scale-105">Playlists</button>
+      <button aria-label="Songs" class="hover:text-[var(--primary)] transition focus:scale-105">Songs</button>
+      <button aria-label="Albums" class="hover:text-[var(--primary)] transition focus:scale-105">Albums</button>
+    </div>
+    <div id="playlists" class="fade-in" style="animation-delay:.44s;">
+      <div class="grid grid-cols-2 gap-5 mb-8">
+        <div aria-label="Playlist Morning Vibes" class="bg-[var(--secondary)] rounded-xl shadow p-3 hover:scale-[1.04] focus:scale-105 focus:ring-2 focus:ring-[var(--primary)] card-bounce cursor-pointer flex flex-col items-start">
+          <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=200" class="rounded-lg mb-2 h-24 w-full object-cover" alt="Playlist cover"/>
+          <div class="font-semibold mb-1">Morning Vibes</div>
+          <div class="text-xs text-[var(--muted-foreground)]">14 songs</div>
+        </div>
+        <div aria-label="Playlist Late Night" class="bg-[var(--secondary)] rounded-xl shadow p-3 hover:scale-[1.04] focus:scale-105 focus:ring-2 focus:ring-[var(--primary)] card-bounce cursor-pointer flex flex-col items-start">
+          <img src="https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?q=80&w=200" class="rounded-lg mb-2 h-24 w-full object-cover" alt="Playlist cover"/>
+          <div class="font-semibold mb-1">Late Night</div>
+          <div class="text-xs text-[var(--muted-foreground)]">22 songs</div>
+        </div>
+      </div>
+      <div class="mb-6 fade-in" style="animation-delay:.5s;">
+        <div class="text-sm font-semibold mb-2">Your Songs</div>
+        <div class="flex flex-col gap-4">
+          <div aria-label="Song Midnight Riffs" class="flex items-center gap-3 p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--secondary)] active:scale-95 focus:scale-105 focus-within:ring-2 focus-within:ring-[var(--accent)] cursor-pointer transition card-bounce">
+            <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3fd0?q=80&w=80" class="h-10 w-10 rounded object-cover" alt="Song cover" />
+            <div class="flex-1">
+              <div class="font-semibold">Midnight Riffs</div>
+              <div class="text-xs text-[var(--muted-foreground)]">Nebula</div>
+            </div>
+            <button aria-label="Play song" class="p-2 hover:scale-110 transition" style="background:none; color:var(--primary)"><i data-lucide="play"></i></button>
+            <button aria-label="Add to playlist" class="p-2 ml-1 hover:scale-110 transition" style="background:none; color:var(--accent)"><i data-lucide="plus"></i></button>
+          </div>
+          <div aria-label="Song Ordinary Days" class="flex items-center gap-3 p-2 rounded-lg bg-[var(--muted)] hover:bg-[var(--secondary)] active:scale-95 focus:scale-105 focus-within:ring-2 focus-within:ring-[var(--accent)] cursor-pointer transition card-bounce">
+            <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?q=80&w=80" class="h-10 w-10 rounded object-cover" alt="Song cover" />
+            <div class="flex-1">
+              <div class="font-semibold">Ordinary Days</div>
+              <div class="text-xs text-[var(--muted-foreground)]">Sam Wave</div>
+            </div>
+            <button aria-label="Play song" class="p-2 hover:scale-110 transition" style="background:none; color:var(--primary)"><i data-lucide="play"></i></button>
+            <button aria-label="Add to playlist" class="p-2 ml-1 hover:scale-110 transition" style="background:none; color:var(--accent)"><i data-lucide="plus"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="mb-8 fade-in" style="animation-delay:.64s;">
+        <div class="text-sm font-semibold mb-2">Your Albums</div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col items-center bg-[var(--secondary)] rounded-xl p-3 hover:scale-[1.04] focus:scale-105 focus:ring-2 focus:ring-[var(--primary)] card-bounce cursor-pointer">
+            <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=180" class="h-16 w-16 rounded-lg object-cover mb-2" alt="Album cover" />
+            <div class="font-semibold text-center">Skyways</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Album</div>
+          </div>
+          <div class="flex flex-col items-center bg-[var(--secondary)] rounded-xl p-3 hover:scale-[1.04] focus:scale-105 focus:ring-2 focus:ring-[var(--primary)] card-bounce cursor-pointer">
+            <img src="https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=180" class="h-16 w-16 rounded-lg object-cover mb-2" alt="Album cover" />
+            <div class="font-semibold text-center">Retro Night</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Album</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>lucide.createIcons()</script>
+</body>
+</html>

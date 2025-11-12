@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LyriQ Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .fade-in { animation: fadeInUp 0.8s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes fadeInUp { 0%{ opacity:0; transform:translate3d(0,32px,0) scale(.98);} 100%{ opacity:1; transform:none;} }
+    .carousel-slide { animation: carouselIn 1s cubic-bezier(.32,0,.67,0) both; }
+    @keyframes carouselIn {0%{opacity:0;transform:translateY(30px) scale(.97);} 100%{opacity:1;transform:none;}}
+  </style>
+</head>
+<body class="fade-in" style="background:var(--background); color:var(--foreground); font-family:var(--font-sans); min-height:100vh;">
+  <header class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] fade-in" style="animation-delay:.15s;">
+    <button aria-label="Open menu" class="p-2 flex items-center hover:scale-105 transition-transform duration-300" style="color: var(--primary); background:none;"><i data-lucide="menu"></i></button>
+    <div class="text-xl font-bold">LyriQ</div>
+    <div class="flex gap-3 items-center">
+      <button aria-label="Search" style="background:none; color:var(--primary)" class="hover:scale-105 transition-transform"><i data-lucide="search"></i></button>
+      <img src="https://placehold.co/36x36/23272F/FFF?text=U" class="rounded-full ml-2 border border-[var(--border)] h-9 w-9 fade-in" alt="User Profile"/>
+    </div>
+  </header>
+  <main class="px-4 pt-6 pb-20 max-w-2xl mx-auto fade-in" style="animation-delay:0.35s;">
+    <h1 class="text-3xl font-bold mb-2">Good Morning, Alex!</h1>
+    <div class="flex gap-3 mb-7 fade-in" style="animation-delay:0.55s;">
+      <button aria-label="Record" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl shadow-md hover:scale-[1.09] hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition"><i data-lucide="mic" class="mb-1"></i>Record</button>
+      <button aria-label="Library" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl shadow-md hover:scale-[1.09] hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition"><i data-lucide="library"></i>Library</button>
+      <button aria-label="Mumble" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl shadow-md hover:scale-[1.09] hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-[var(--primary-accent)] transition"><i data-lucide="pencil-line"></i>Mumble</button>
+    </div>
+    <section class="mb-8 fade-in" style="animation-delay:0.7s;">
+      <h2 class="text-lg font-semibold mb-3">Featured</h2>
+      <div class="flex gap-4 overflow-x-auto pb-2">
+        <div class="relative min-w-[260px] carousel-slide">
+          <img src="https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?q=80&w=400" class="rounded-2xl h-40 object-cover w-full shadow-xl transition-transform duration-500 hover:scale-105" alt="Featured Album"/>
+          <div class="absolute bottom-4 left-4 text-white text-xl font-bold drop-shadow">Synthwave 2025</div>
+        </div>
+        <div class="relative min-w-[260px] carousel-slide">
+          <img src="https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=400" class="rounded-2xl h-40 object-cover w-full shadow-xl transition-transform duration-500 hover:scale-105" alt="Featured Album"/>
+          <div class="absolute bottom-4 left-4 text-white text-xl font-bold drop-shadow">Jazz Reloaded</div>
+        </div>
+      </div>
+    </section>
+    <section class="mb-8 fade-in" style="animation-delay:1s;">
+      <h2 class="text-lg font-semibold mb-3">Recent Plays</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-[var(--secondary)] shadow transition-all hover:scale-[1.06] focus-within:ring-2 focus-within:ring-[var(--primary)]">
+          <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?q=80&w=120" class="h-12 w-12 rounded-lg object-cover" alt="Song Cover" />
+          <div>
+            <div class="font-semibold">Ordinary Days</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Sam Wave</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-[var(--secondary)] shadow transition-all hover:scale-[1.06] focus-within:ring-2 focus-within:ring-[var(--primary)]">
+          <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3fd0?q=80&w=120" class="h-12 w-12 rounded-lg object-cover" alt="Song Cover" />
+          <div>
+            <div class="font-semibold">Midnight Riffs</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Nebula</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="mb-8 fade-in" style="animation-delay:1.2s;">
+      <h2 class="text-lg font-semibold mb-3">Recommended</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <button aria-label="Play Dream Rider" class="flex flex-col items-center bg-[var(--secondary)] rounded-xl py-4 px-2 shadow hover:scale-[1.07] hover:shadow-xl focus:ring-2 focus:ring-[var(--primary)] transition">
+          <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=120" class="h-14 w-14 mb-2 rounded-full object-cover" alt="Artist"/>
+          <span class="font-semibold">Dream Rider</span>
+          <span class="text-xs text-[var(--muted-foreground)]">Pop • Album</span>
+        </button>
+        <button aria-label="Play Rhythm Roots" class="flex flex-col items-center bg-[var(--secondary)] rounded-xl py-4 px-2 shadow hover:scale-[1.07] hover:shadow-xl focus:ring-2 focus:ring-[var(--primary)] transition">
+          <img src="https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=120" class="h-14 w-14 mb-2 rounded-full object-cover" alt="Artist"/>
+          <span class="font-semibold">Rhythm Roots</span>
+          <span class="text-xs text-[var(--muted-foreground)]">Jazz • Playlist</span>
+        </button>
+      </div>
+    </section>
+  </main>
+  <footer class="fixed bottom-0 left-0 right-0 h-16 bg-[var(--secondary)] flex items-center px-5 border-t border-[var(--border)] fade-in" style="animation-delay:1.35s; box-shadow:0 -8px 32px #0003">
+    <div class="flex items-center gap-4 w-full">
+      <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3fd0?q=80&w=80" class="h-11 w-11 rounded-md object-cover" alt="Now Playing Cover" />
+      <div class="flex-1">
+        <div class="font-semibold text-sm">Midnight Riffs</div>
+        <div class="text-xs text-[var(--muted-foreground)]">Nebula</div>
+      </div>
+      <button aria-label="Play/Pause track" style="color:var(--primary); background:none" class="hover:scale-110 transition-transform"><i data-lucide="play"></i></button>
+    </div>
+  </footer>
+  <script>lucide.createIcons()</script>
+</body>
+</html>

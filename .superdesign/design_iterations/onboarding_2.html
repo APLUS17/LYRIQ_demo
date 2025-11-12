@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LyriQ Music • Welcome</title>
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fadeInUp 1s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes fadeInUp { 0%{ opacity:0; transform:translate3d(0,40px,0) scale(0.97);} 100%{ opacity:1; transform:none;}}
+    .bounce-in { animation: bounceIn 0.8s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes bounceIn { 0%{ opacity:0; transform: translateY(24px) scale(.98);} 70%{ opacity: 1; transform:translateY(-4px) scale(1.01);} 100%{ opacity: 1; transform:none;} }
+  </style>
+</head>
+<body class="fade-in" style="background:var(--background); color:var(--foreground); font-family:var(--font-sans); min-height:100vh;">
+  <div class="flex flex-col min-h-screen justify-between">
+    <main class="flex flex-col flex-1 items-center justify-center px-4">
+      <div class="text-center fade-in" style="animation-delay: 0.2s;">
+        <div class="mb-6 mt-10 flex justify-center bounce-in" style="animation-delay: 0.4s;">
+          <img src="https://placehold.co/72x72/08E0C6/FFF?text=🎵" alt="LyriQ Logo" class="rounded-full shadow-2xl" style="box-shadow:0 4px 40px #08e0c655;" height=72 width=72 />
+        </div>
+        <h1 class="text-4xl font-bold mb-2 fade-in" style="animation-delay:0.5s; color:var(--foreground)">Welcome to LyriQ Music</h1>
+        <p class="mb-6 text-lg fade-in" style="animation-delay:0.65s; color:var(--secondary-foreground)">Unleash your sound. Discover, create, and share music your way.</p>
+      </div>
+      <div class="mb-8 fade-in" style="animation-delay:1s;">
+        <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=facearea&w=400&h=220&q=80" alt="Music Onboarding Hero" class="rounded-xl shadow-lg mb-8 max-w-xs w-full mx-auto object-cover transition-transform duration-500 ease-in-out hover:scale-105 focus:scale-105" style="box-shadow:var(--shadow-lg)"/>
+      </div>
+      <div class="w-full max-w-sm space-y-4">
+        <button class="w-full py-3 rounded-lg font-semibold transition bg-[var(--primary)] text-[var(--background)] font-sans shadow-lg hover:scale-[1.04] focus:scale-[1.04] focus:ring-2 focus:ring-[var(--primary-accent)] focus:outline-none" aria-label="Continue with Google">Continue with Google</button>
+        <button class="w-full py-3 rounded-lg font-semibold border border-[var(--primary)] transition bg-[var(--background)] text-[var(--primary)] font-sans shadow hover:scale-[1.04] focus:scale-[1.04] focus:ring focus:ring-[var(--primary-accent)] focus:outline-none" aria-label="Sign up">Sign Up</button>
+        <button class="w-full py-3 rounded-lg font-semibold transition bg-[var(--secondary)] text-[var(--foreground)] font-sans shadow-lg hover:scale-[1.04] focus:scale-[1.04] focus:ring-2 focus:ring-[var(--primary-accent)] focus:outline-none" aria-label="Log in">Log In</button>
+      </div>
+    </main>
+    <footer class="flex justify-center mb-4 mt-10 text-xs text-[var(--muted-foreground)] fade-in" style="animation-delay:1.3s;">
+      <span>By continuing, you agree to LyriQ’s <a href="#" style="color:var(--primary);">Terms</a> & <a href="#" style="color:var(--primary);">Privacy Policy</a></span>
+    </footer>
+  </div>
+</body>
+</html>

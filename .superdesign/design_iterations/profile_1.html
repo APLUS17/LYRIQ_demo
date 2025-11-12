@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile • LyriQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="musicapp_theme_1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .fade-in {animation: fadeIn .8s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes fadeIn {0% {opacity:0;transform:translateY(30px) scale(.98);} 100%{opacity:1;transform:none;}}
+    .card-bounce {animation: cardBounce .75s cubic-bezier(.44,0,.2,1) both;}
+    @keyframes cardBounce {0%{opacity:0;transform:scale(.94) translateY(32px);} 85%{opacity:1;transform:scale(1.02) translateY(-4px);} 100%{opacity:1;transform:none;}}
+  </style>
+</head>
+<body class="fade-in" style="background:var(--background); color:var(--foreground); font-family:var(--font-sans); min-height:100vh;">
+  <header class="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] fade-in" style="animation-delay:0.1s;">
+    <span class="font-bold text-xl">Profile</span>
+    <button aria-label="Open settings" class="p-2 hover:scale-110 transition-transform focus:ring-2 focus:ring-[var(--primary)]" style="color:var(--primary)"><i data-lucide="settings"></i></button>
+  </header>
+  <main class="px-4 pt-8 pb-24 max-w-2xl mx-auto">
+    <div class="flex flex-col items-center mb-6 fade-in" style="animation-delay:0.25s;">
+      <img src="https://placehold.co/84x84/23272F/FFF?text=A" class="rounded-full h-20 w-20 mb-3 border-2 border-[var(--primary)] shadow-lg card-bounce" alt="User Profile"/>
+      <div class="text-lg font-bold">Alex</div>
+      <button aria-label="Edit profile" class="mt-2 py-1 px-4 rounded-lg font-medium bg-[var(--primary)] text-[var(--background)] hover:scale-[1.04] focus:scale-[1.04] focus:ring-2 focus:ring-[var(--primary-accent)] focus:outline-none transition">Edit Profile</button>
+    </div>
+    <div class="grid grid-cols-3 gap-3 mb-8 fade-in" style="animation-delay:0.36s;">
+      <div class="bg-[var(--secondary)] rounded-xl p-4 flex flex-col items-center card-bounce">
+        <span class="font-bold text-xl">8</span>
+        <span class="text-xs text-[var(--muted-foreground)]">Playlists</span>
+      </div>
+      <div class="bg-[var(--secondary)] rounded-xl p-4 flex flex-col items-center card-bounce">
+        <span class="font-bold text-xl">123</span>
+        <span class="text-xs text-[var(--muted-foreground)]">Songs</span>
+      </div>
+      <div class="bg-[var(--secondary)] rounded-xl p-4 flex flex-col items-center card-bounce">
+        <span class="font-bold text-xl">5</span>
+        <span class="text-xs text-[var(--muted-foreground)]">Albums</span>
+      </div>
+    </div>
+    <div class="mb-9 fade-in" style="animation-delay:0.44s;">
+      <h3 class="text-base font-semibold mb-2">Preferences</h3>
+      <div class="bg-[var(--secondary)] rounded-xl p-4 space-y-4 card-bounce">
+        <div class="flex justify-between items-center">
+          <span>Dark Mode</span>
+          <button aria-label="Toggle dark mode" class="rounded-full p-2 bg-[var(--muted)] focus:ring-2 focus:ring-[var(--primary)] transition-all"><i data-lucide="moon"></i></button>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>Notifications</span>
+          <button aria-label="Toggle notifications" class="rounded-full p-2 bg-[var(--muted)] focus:ring-2 focus:ring-[var(--primary)] transition-all"><i data-lucide="bell"></i></button>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>Connected Accounts</span>
+          <button aria-label="Manage connected accounts" class="rounded-full p-2 bg-[var(--muted)] focus:ring-2 focus:ring-[var(--primary)] transition-all"><i data-lucide="link"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-col gap-3 fade-in" style="animation-delay:0.6s;">
+      <button aria-label="Log out" class="w-full py-3 rounded-lg font-semibold transition bg-[var(--primary)] text-[var(--background)] hover:scale-[1.05] focus:ring-2 focus:ring-[var(--primary)]">Log Out</button>
+      <button aria-label="Delete account" class="w-full py-3 rounded-lg font-semibold transition bg-[var(--muted)] text-[var(--foreground)] hover:scale-[1.02] focus:ring-2 focus:ring-[#FD3D5C]">Delete Account</button>
+    </div>
+  </main>
+  <script>lucide.createIcons()</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(npx expo:*)",
+      "Bash(bun start:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Bash(expo start)",
+      "Bash(timeout:*)",
+      "Bash(expo start:*)",
+      "Bash(cp:*)",
+      "Bash(bunx expo install:*)",
+      "Bash(bun --version:*)",
+      "Bash(npm:*)",
+      "Bash(node --version:*)",
+      "Bash(npx expo-doctor@latest:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

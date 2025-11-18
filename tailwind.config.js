@@ -11,11 +11,24 @@ module.exports = {
   theme: {
     // NOTE to AI: You can extend the theme with custom colors or styles here.
     extend: {
-      // For example, you can add a primary or secondary color here.
-      // colors: {
-      //   primary: "#INSERT_VALID_HEX_CODE",
-      //   secondary: "#INSERT_VALID_HEX_CODE",
-      // },
+      // Lyriq Dark Theme Colors (from Geminiv3)
+      colors: {
+        primary: {
+          bg: '#121212',        // Almost Black - main background
+          container: '#1c1c1e', // Dark Charcoal - containers
+          card: '#2a2a2e',      // Dark Slate - cards/sections
+        },
+        accent: {
+          yellow: '#facc15',    // Waveform/primary accent
+          blue: '#60A5FA',      // Gemini AI accent
+          red: '#EF4444',       // Destructive/delete
+        },
+      },
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
+        mono: ['monospace'],
+        georgia: ['Georgia', 'serif'],
+      },
       fontSize: {
         xs: "10px",
         sm: "12px",

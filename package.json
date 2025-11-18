@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@expo/react-native-action-sheet": "^4.1.1",
     "@expo/vector-icons": "^14.1.0",
+    "@google/generative-ai": "^0.24.1",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-clipboard/clipboard": "^1.16.2",
     "@react-native-community/datetimepicker": "8.3.0",

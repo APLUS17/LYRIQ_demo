@@ -5,9 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // --- Types ---
 export type Section = {
   id: string;
-  type: 'verse' | 'hook' | 'bridge' | string;
+  type: 'verse' | 'hook' | 'bridge' | 'chorus' | 'intro' | 'outro' | string;
   title?: string;
   content?: string;
+  lyrics?: string[]; // Array of lyric lines for structured view
   isStarred?: boolean;
   createdAt: string;
 };
@@ -17,6 +18,7 @@ export type Recording = {
   name: string;
   uri: string;
   duration: number;
+  sectionId?: string; // Optional link to a specific section
   createdAt: string;
 };
 
@@ -34,17 +36,23 @@ interface LyricState {
   sectionsByProject: Record<string, Section[]>;
   recordingsByProject: Record<string, Recording[]>;
 
+  // UI State
+  viewMode: 'structured' | 'compact';
+  syllableCountEnabled: boolean;
+  toggleViewMode: () => void;
+  toggleSyllableCount: () => void;
+
   // Recording Modal State
   isRecordingModalVisible: boolean;
   toggleRecordingModal: (value?: boolean) => void;
-  
+
   // Toast State
   toastVisible: boolean;
   toastMessage: string;
   toastType: 'success' | 'error' | 'info';
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
-  
+
   // Performance Mode State
   isPerformanceMode: boolean;
   togglePerformanceMode: (value?: boolean) => void;
@@ -89,6 +97,18 @@ export const useLyricStore = create<LyricState>()(
       currentProjectId: null,
       sectionsByProject: { '__unassigned__': [] },
       recordingsByProject: { '__unassigned__': [] },
+
+      // --- UI State ---
+      viewMode: 'structured',
+      syllableCountEnabled: false,
+      toggleViewMode: () =>
+        set((state: LyricState) => ({
+          viewMode: state.viewMode === 'structured' ? 'compact' : 'structured',
+        })),
+      toggleSyllableCount: () =>
+        set((state: LyricState) => ({
+          syllableCountEnabled: !state.syllableCountEnabled,
+        })),
 
       // --- Recording Modal State ---
       isRecordingModalVisible: false,
@@ -346,11 +366,13 @@ export const useLyricStore = create<LyricState>()(
     {
       name: 'lyriq-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         projects: state.projects,
         currentProjectId: state.currentProjectId,
         sectionsByProject: state.sectionsByProject,
         recordingsByProject: state.recordingsByProject,
+        viewMode: state.viewMode,
+        syllableCountEnabled: state.syllableCountEnabled,
       }),
       // One-time migration for old flat arrays
       onRehydrateStorage: () => (state: any) => {

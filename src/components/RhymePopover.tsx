@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { RhymeWord } from '../api/gemini';
+import { RhymeWord } from '../api/aiRhymeService';
 
 interface RhymePopoverProps {
   visible: boolean;

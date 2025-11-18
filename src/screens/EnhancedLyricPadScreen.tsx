@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLyricStore } from '../state/lyricStore';
 import { EnhancedLyricSection } from '../components/EnhancedLyricSection';
 import { Sidebar } from '../components/Sidebar';
+import { AIProviderStatus } from '../components/AIProviderStatus';
 
 interface EnhancedLyricPadScreenProps {
   onBack?: () => void;
@@ -77,6 +78,13 @@ export function EnhancedLyricPadScreen({ onBack }: EnhancedLyricPadScreenProps =
         {/* Options Menu */}
         {showOptionsMenu && (
           <View className="bg-[#1c1c1e] rounded-lg p-2 mb-4 border border-gray-700">
+            {/* AI Provider Status */}
+            <View className="px-2 py-2">
+              <AIProviderStatus />
+            </View>
+
+            <View className="h-px bg-gray-700 my-2" />
+
             <Pressable
               onPress={() => {
                 toggleViewMode();

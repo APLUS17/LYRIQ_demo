@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLyricStore, Section } from '../state/lyricStore';
 import { SyllableDisplay, SyllableStats } from './SyllableDisplay';
 import { RhymePopover } from './RhymePopover';
-import { getRhymeSuggestions, RhymeWord } from '../api/gemini';
+import { getRhymeSuggestions, RhymeWord } from '../api/aiRhymeService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH / 3.5;
